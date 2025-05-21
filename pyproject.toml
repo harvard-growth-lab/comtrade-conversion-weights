@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "weights-generator"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+comtradeapicall = "^1.2.1"
+pandas = "^2.2.3"
+urllib3 = "^2.4.0"
+fastparquet = "^2024.11.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
