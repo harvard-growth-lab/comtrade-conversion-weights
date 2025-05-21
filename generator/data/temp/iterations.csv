@@ -1,0 +1,7 @@
+from_year,to_year,source_classification,target_classification
+1962,1976,S1,S2
+1976,1962,S2,S1
+1992,1988,H0,S3
+1988,1992,S3,H0
+1988,1976,S3,S2
+1976,1988,S2,S3
