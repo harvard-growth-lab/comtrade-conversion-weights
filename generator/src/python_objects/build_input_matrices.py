@@ -8,6 +8,8 @@ from datetime import datetime
 import re
 import comtradeapicall
 from pathlib import Path
+from src.utils.util import clean_groups, get_detailed_product_level
+
 
 class MatrixBuilder():
     atlas_classifications = ["H0", "H4", "S1", "S2"]
@@ -135,33 +137,7 @@ def generate_dataframes(dfs, table, source_year, target_year):
         df = df.fillna(0)
         os.makedirs(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/matrices", exist_ok=True)
         df.to_csv(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/matrices/{table}.matrix.start.{source_year}.end.{target_year}.group.{group_id}.csv")
-        
 
-def clean_groups(groups, source_class, target_class):
-    # prep groups files
-    try:
-        groups = groups.drop(columns='Unnamed: 0')
-    except:
-        pass
-    matched_groups = groups[groups['group.id'].isna()]
-    groups = groups[~groups['group.id'].isna()]
-    groups['group.id'] = groups['group.id'].astype(int)
-    groups['code.source'] = groups['code.source'].astype(str)
-    groups['code.target'] = groups['code.target'].astype(str)
-
-    source_detailed_product_level = get_detailed_product_level(source_class)
-    target_detailed_product_level = get_detailed_product_level(target_class)
-    
-    groups.loc[groups['code.source'].str.len() < source_detailed_product_level, 'code.source'] = groups['code.source'].str.zfill(source_detailed_product_level)
-    groups.loc[groups['code.target'].str.len() < target_detailed_product_level, 'code.target'] = groups['code.target'].str.zfill(target_detailed_product_level)
-    return matched_groups, groups
-
-
-def get_detailed_product_level(classification):
-    if classification.startswith("H"):
-        return 6
-    elif classification.startswith("S"):
-        return 4
         
 def align_reporter_indices(groups, target_dfs, source_dfs):
     # enforces shared reporter indices 
