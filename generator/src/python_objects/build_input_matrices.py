@@ -6,40 +6,17 @@ import glob
 import os
 from datetime import datetime
 import re
+import comtradeapicall
+from pathlib import Path
 
 class MatrixBuilder():
     atlas_classifications = ["H0", "H4", "S1", "S2"]
     RELEASE_YEARS = {"S1" : 1962, "S2": 1976, "S3": 1988, "S4": 2007,
                      "H0": 1995, "H1": 1996, "H2": 2002, "H3": 2007, "H4": 2012, "H5": 2017, "H6": 2022}
 
-    weight_tables = [
-    # backward
-    ("backward", "H1", "H0"),
-    # ("backward", "H2", "H1"),
-    # ("backward", "H3", "H2"),
-    # ("backward", "H4", "H3"),
-    # ("backward", "H5", "H4"),
-    # ("backward", "H6", "H5"),
-    
-    # Since SITC Rev. 3 was introduced in 1988, therefore convert HS 1992 to SITC Rev. 3.
-    # ("backward", "H0", "S3"),
-    # ("backward", "S3", "S2"),
-    # ("backward", "S2", "S1"),
-    
-    # forward
-#     ("forward", "H0", "H1"),
-#     ("forward", "H1", "H2"),
-#     ("forward", "H2", "H3"),
-#     ("forward", "H3", "H4"),
-#     ("forward", "H4", "H5"),
-#     ("forward", "H5", "H6"),
-    
-#     ("forward", "S3", "H0"),
-#     ("forward", "S2", "S3"),
-#     ("forward", "S1", "S2"),
-]
 
-    def __init__(self):
+    def __init__(self, weight_tables):
+        self.weight_tables = weight_tables
         self.run()
     
 
@@ -89,9 +66,10 @@ class MatrixBuilder():
             files_source = get_files_by_classification_in_year(files_source, source_class)
             comtrade_dict = {target_year: files_target, source_year: files_source}
             reporters = extract_reporters_with_timely_classification_update(comtrade_dict)
-            groups = pd.read_csv(f"data_groups/from_{source_class}_to_{target_class}.csv")
+            groups = pd.read_csv(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/concordance_groups/from_{source_class}_to_{target_class}.csv")
             print(f"size before dropping nan {groups.shape}")
-            groups = groups[~((groups['code.source'].isna()) | (groups['code.target'].isna()))]
+            if not groups[((groups['code.source'].isna()) | (groups['code.target'].isna()))].empty:
+                raise ValueError(f"check the concordance group file for {source_class} to {target_class} \n {groups[((groups['code.source'].isna()) | (groups['code.target'].isna()))]}")
             print(f"size after dropping nan {groups.shape}")
             groups['code.source'] = groups['code.source'].astype(int).astype(str)
             groups['code.target'] = groups['code.target'].astype(int).astype(str)
@@ -135,7 +113,7 @@ class MatrixBuilder():
 def generate_dataframes(dfs, table, source_year, target_year):
         # generate data frames 
 
-    files = glob.glob(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/paper/product_conversion/DataAtlas/{table}.matrix.start.{source_year}.end.{target_year}.group.*.csv")
+    files = glob.glob(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/matrices/{table}.matrix.start.{source_year}.end.{target_year}.group.*.csv")
 
     # clean out previously generated files
     for file_path in files:
@@ -155,7 +133,8 @@ def generate_dataframes(dfs, table, source_year, target_year):
             continue
         
         df = df.fillna(0)
-        df.to_csv(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/paper/product_conversion/DataAtlas/{table}.matrix.start.{source_year}.end.{target_year}.group.{group_id}.csv")
+        os.makedirs(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/matrices", exist_ok=True)
+        df.to_csv(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/matrices/{table}.matrix.start.{source_year}.end.{target_year}.group.{group_id}.csv")
         
 
 def clean_groups(groups, source_class, target_class):
@@ -169,19 +148,21 @@ def clean_groups(groups, source_class, target_class):
     groups['group.id'] = groups['group.id'].astype(int)
     groups['code.source'] = groups['code.source'].astype(str)
     groups['code.target'] = groups['code.target'].astype(str)
+
+    source_detailed_product_level = get_detailed_product_level(source_class)
+    target_detailed_product_level = get_detailed_product_level(target_class)
     
-    if source_class.startswith("H"):
-        groups.loc[groups['code.source'].str.len() < 6, 'code.source'] = groups['code.source'].str.zfill(6)
-    else:
-        groups.loc[groups['code.source'].str.len() < 4, 'code.source'] = groups['code.source'].str.zfill(4)
-    
-    if target_class.startswith("H"):
-        groups.loc[groups['code.target'].str.len() < 6, 'code.target'] = groups['code.target'].str.zfill(6)
-    else:
-        groups.loc[groups['code.target'].str.len() < 4, 'code.target'] = groups['code.target'].str.zfill(4)
+    groups.loc[groups['code.source'].str.len() < source_detailed_product_level, 'code.source'] = groups['code.source'].str.zfill(source_detailed_product_level)
+    groups.loc[groups['code.target'].str.len() < target_detailed_product_level, 'code.target'] = groups['code.target'].str.zfill(target_detailed_product_level)
     return matched_groups, groups
 
 
+def get_detailed_product_level(classification):
+    if classification.startswith("H"):
+        return 6
+    elif classification.startswith("S"):
+        return 4
+        
 def align_reporter_indices(groups, target_dfs, source_dfs):
     # enforces shared reporter indices 
     for group_id in groups['group.id'].unique().tolist():
@@ -213,17 +194,13 @@ def extract_reporters_with_timely_classification_update(comtrade_dict):
 
 def generate_year_avgs(classification, start_year, avg_range):
     df = pd.DataFrame(columns=['reporterISO3', 'partnerISO3',  'cmdCode', "qty", "CIFValue", "FOBValue", "primaryValue"])
-    if classification.startswith("H"):
-        detailed_product_level = 6
-    elif classification.startswith("S"):
-        detailed_product_level = 4
-    else:
-        raise ValueError(f"incorrect product levels {detailed_product_level} in df filter function")
+    
+    detailed_product_level = get_detailed_product_level(classification)
+
     print(f"adding starting year {start_year} into the avg")    
     df_path = f"/n/hausmann_lab/lab/atlas/data/as_reported/aggregated_by_year/parquet/{classification}/{classification}_{start_year}.parquet"
     df = pd.read_parquet(df_path)
 
-    
     df = df[(df.flowCode=="M")&(df.digitLevel==detailed_product_level)]
     df = df.groupby(['reporterISO3', 'partnerISO3',  'cmdCode']).agg({"qty":"sum","CIFValue":"sum", "FOBValue": "sum", "primaryValue": "sum"}).reset_index()
     df = df.rename(columns={"qty":f"qty_{start_year}","CIFValue":f"CIFValue_{start_year}", "FOBValue": f"FOBValue_{start_year}", "primaryValue": f"primaryValue_{start_year}"})
@@ -251,12 +228,8 @@ def generate_year_avgs(classification, start_year, avg_range):
         
 
 def filter_df_for_reporters(classification, df, reporters):
-    if classification.startswith("H"):
-        detailed_product_level = 6
-    elif classification.startswith("S"):
-        detailed_product_level = 4
-    else:
-        raise ValueError(f"incorrect product levels {detailed_product_level} in df filter function")
+    detailed_product_level = get_detailed_product_level(classification)
+
     df = df[(df.flowCode=="M")&(df.digitLevel==detailed_product_level)]
     reporter = comtradeapicall.getReference("reporter")
     partner = comtradeapicall.getReference("partner")
@@ -275,13 +248,11 @@ def country_by_prod_trade(df, groups, classification_type, prod_class):
     for group_id in groups['group.id'].unique():
         group = groups[groups['group.id']==group_id]
         group = group.copy()
+        detailed_product_level = get_detailed_product_level(prod_class)
         if classification_type == "target":
             group.loc[:, 'code.target'] = group['code.target'].astype(str)
-            if prod_class.startswith("H"):
-                group.loc[group['code.target'].str.len() < 6, 'code.target'] = group['code.target'].str.zfill(6)
-            else:
-                group.loc[group['code.target'].str.len() < 4, 'code.target'] = group['code.target'].str.zfill(4)
-
+            
+            group.loc[group['code.target'].str.len() < detailed_product_level, 'code.target'] = group['code.target'].str.zfill(detailed_product_level)
             
             product_codes = group['code.target'].unique().tolist()
             filtered_df = df[df.cmdCode.isin(product_codes)]
@@ -289,11 +260,8 @@ def country_by_prod_trade(df, groups, classification_type, prod_class):
                 import pdb; pdb.set_trace()
         elif classification_type == "source":
             group.loc[:, 'code.source'] = group['code.source'].astype(str)
-
-            if prod_class.startswith("H"):
-                group.loc[group['code.source'].str.len() < 6, 'code.source'] = group['code.source'].str.zfill(6)
-            else:
-                group.loc[group['code.source'].str.len() < 4, 'code.source'] = group['code.source'].str.zfill(4)
+            group.loc[group['code.source'].str.len() < detailed_product_level, 'code.source'] = group['code.source'].str.zfill(detailed_product_level)
+            
             product_codes = group['code.source'].unique().tolist()
             filtered_df = df[df.cmdCode.isin(product_codes)]
             if filtered_df.empty:
@@ -330,31 +298,6 @@ def extract_classifications(filename):
     classifications = [m for m in matches if m not in ["to", "Conversion", "and", "Correlation", "Tables", "xls"]]
     source, target = classifications[0], classifications[1]
     return source, target
-
-
-def format_concordance_table(concordance):
-    source_year = concordance.columns[0][-4:]
-    target_year = concordance.columns[1][-4:]
-    if int(source_year) > int(target_year):
-        direction = "backward"
-    else:
-        direction = "forward"
-
-    if direction == "backward":
-        concordance = pd.DataFrame({
-            'code.after': concordance.iloc[:, 0].astype(str),
-            'code.before': concordance.iloc[:, 1].astype(str),
-            'Relationship': corr.iloc[:, 2],
-            'adjustment': f"{source_year} to {target_year}"
-        })
-    elif direction == "forward":
-        concordance = pd.DataFrame({
-            'code.after': corr.iloc[:, 1].astype(str),
-            'code.before': corr.iloc[:, 0].astype(str),
-            'Relationship': corr.iloc[:, 2],
-            'adjustment': f"{source_year} to {target_year}"
-        })
-    return concordance
 
 
 def determine_relationship(concordance_df):
