@@ -14,7 +14,8 @@ from src.utils.util import clean_groups, get_detailed_product_level
 class MatrixBuilder():
     atlas_classifications = ["H0", "H4", "S1", "S2"]
     RELEASE_YEARS = {"S1" : 1962, "S2": 1976, "S3": 1988, "S4": 2007,
-                     "H0": 1995, "H1": 1996, "H2": 2002, "H3": 2007, "H4": 2012, "H5": 2017, "H6": 2022}
+                     "H0": 1995, "H1": 1996, "H2": 2002, "H3": 2007, 
+                     "H4": 2012, "H5": 2017, "H6": 2022}
 
 
     def __init__(self, weight_tables):
