@@ -31,7 +31,7 @@ class CombineConcordances():
             # corr = pd.read_excel(file, sheet_name = f"{source}-{target} Correlations", header=0)
             corr = pd.read_excel(file, sheet_name = f"Correlation Tables", header=1, dtype=str)
 
-            df = format_concordance_table(corr)
+            df = self.format_concordance_table(corr)
             if df.empty:
                 print(f"already concatenated to file")
                 continue
@@ -120,3 +120,30 @@ class CombineConcordances():
             else:
                 df.at[i, 'Relationship'] = "n:n"   
         return df
+    
+
+    def format_concordance_table(self, concordance):
+        source_year = concordance.columns[0][-4:]
+        target_year = concordance.columns[1][-4:]
+        if int(source_year) > int(target_year):
+            direction = "backward"
+        else:
+            direction = "forward"
+
+        if direction == "backward":
+            concordance = pd.DataFrame({
+                'code.after': concordance.iloc[:, 0].astype(str),
+                'code.before': concordance.iloc[:, 1].astype(str),
+                'Relationship': corr.iloc[:, 2],
+                'adjustment': f"{source_year} to {target_year}"
+            })
+        elif direction == "forward":
+            concordance = pd.DataFrame({
+                'code.after': corr.iloc[:, 1].astype(str),
+                'code.before': corr.iloc[:, 0].astype(str),
+                'Relationship': corr.iloc[:, 2],
+                'adjustment': f"{source_year} to {target_year}"
+            })
+        return concordance
+
+
