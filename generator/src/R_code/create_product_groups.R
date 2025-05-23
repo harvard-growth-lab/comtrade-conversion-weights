@@ -3,6 +3,7 @@
 ################################################################################
 
 
+
 library(ggplot2)
 library(readxl)
 library(stringr)
@@ -34,7 +35,7 @@ parse_args <- function() {
   }
   
   # Set working directory
-  setwd(working_dir)
+  setwd("/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator")
   
   return(read.csv(iterations_file))
 }
@@ -92,6 +93,19 @@ create.groups=function(data ## Specify a two column dataframe with the code corr
   
 }
 
+iterations_df <- data.frame(
+  from_year = c(
+    1996, 2002, 2007, 2012, 2017, 2022, 1992, 1996, 2002, 2007, 2012, 2017, 1962, 1976, 1992, 1988, 1988, 1976),
+  to_year = c(
+    1992, 1996, 2002, 2007, 2012, 2017, 1996, 2002, 2007, 2012, 2017, 2022, 1976, 1962, 1988, 1976, 1992, 1988),
+  source_classification = c(
+    "H1", "H2", "H3", "H4", "H5", "H6", "H0", "H1", "H2", "H3", "H4", "H5", "S1", "S2", "H0", "S3", "S3", "S2"),
+  target_classification = c(
+    "H0", "H1", "H2", "H3", "H4", "H5", "H1", "H2", "H3", "H4", "H5", "H6", "S2", "S1", "S3", "S2", "H0", "S3"),
+  stringsAsFactors = FALSE
+)
+
+
 for(i in 1:nrow(iterations_df)) {
   
   # Extract parameters for this iteration
@@ -112,7 +126,7 @@ for(i in 1:nrow(iterations_df)) {
   }
   
   ### Load all HS vintage correspondences:
-  all.vintages  <- read.csv("data/static/SITC_consolidated_comtrade_concordances.csv")
+  all.vintages  <- read.csv("data/comtrade_concordance/HS_consolidated_comtrade_concordances.csv")
   ## comtrade always provides concordance tables in later classification to earlier classification
   conversion <- subset(all.vintages, adjustment == sprintf("%s to %s", year_1, year_2))
   

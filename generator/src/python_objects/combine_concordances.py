@@ -29,7 +29,7 @@ class CombineConcordances():
             # overwrites previous file
             df.to_csv("data/comtrade_concordance/SITC_consolidated_comtrade_concordances.csv", index=False)
         else:
-            df = pd.read_csv(f"data/comtrade_concordance/{self.classification_group}_consolidated_comtrade_concordances.csv", index=False)
+            df = pd.read_csv(f"data/comtrade_concordance/{self.classification_group}_consolidated_comtrade_concordances.csv", index_col=None, dtype={'code.before': str, 'code.after': str})
 
         concordance_files = glob.glob("data/comtrade_concordance/*.xls")
         for file in concordance_files:
@@ -298,7 +298,5 @@ class CombineConcordances():
             new_rows_df = pd.DataFrame(concorded_products)
             new_df =  pd.concat([concordance, new_rows_df], ignore_index=True)
             new_df.drop_duplicates(subset=["code.before", "code.after", "adjustment"], inplace=True)
-            import pdb; pdb.set_trace()
             return new_df
-        import pdb; pdb.set_trace()
         return concordance
