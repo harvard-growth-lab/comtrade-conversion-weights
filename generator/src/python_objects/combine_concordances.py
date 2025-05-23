@@ -1,28 +1,37 @@
 import pandas as pd
 import glob
+import itertools
+import re
 
 
 class CombineConcordances():
-    def __init__(self, concordance_files):
-        self.concordance_files = concordance_files
 
-    def combine_concordances(self):
-        pass
+    SITC_DETAIL_PRODUCT_CODE_LENGTH = 4
+    HS_DETAIL_PRODUCT_CODE_LENGTH = 6
+    SITC_YEAR_CUTOFF = 1988
+    MAX_TRUNCATION_ATTEMPTS = 4
+    non_concorded_product_file = "data/static/product_missing_concordance.csv"
 
-    def concatentate_concordance_to_main(self, classification_group="HS"):
+    def __init__(self, classification_group):
+        self.classification_group = classification_group
+        self.concatentate_concordance_to_main()
+        # self.concordance_files = concordance_files
+
+
+    def concatentate_concordance_to_main(self):
         """ 
         RUN TO ADD Comtrade Concordance Tables to A Consolidated/Clean concordance table
         """
 
         df = pd.DataFrame(columns=['code.after','code.before','Relationship','adjustment'])
         dtype_dict = {'code.after': str, 'code.before': str}
-        if classification_group == "SITC":
+        if self.classification_group == "SITC":
             # overwrites previous file
-            df.to_csv("comtrade_concordance/SITC_consolidated_comtrade_concordances.csv", index=False)
+            df.to_csv("data/comtrade_concordance/SITC_consolidated_comtrade_concordances.csv", index=False)
         else:
-            df.read_csv(f"comtrade_concordance/{classification_group}_consolidated_comtrade_concordances.csv", index=False)
+            df = pd.read_csv(f"data/comtrade_concordance/{self.classification_group}_consolidated_comtrade_concordances.csv", index=False)
 
-        concordance_files = glob.glob("comtrade_concordance/*.xls")
+        concordance_files = glob.glob("data/comtrade_concordance/*.xls")
         for file in concordance_files:
             source, target = self.extract_classifications(file.split('/')[-1])
             if source.startswith("H") and target.startswith("H"):
@@ -41,21 +50,23 @@ class CombineConcordances():
                     df[col] = df[col].astype(str)
 
             print(f"added to consolidated concordance table")
+            non_concorded_df = pd.read_csv(self.non_concorded_product_file, dtype={"id": str})
+            df = self.handle_no_concordances(df, non_concorded_df)
             df['Relationship'] = df.Relationship.str.replace(' to ', ':')
             df['code.before'] = df['code.before'].apply(lambda x: x[:-1] if len(x) == 5 else x)
             df['code.after'] = df['code.after'].apply(lambda x: x[:-1] if len(x) == 5 else x)
             df = df.drop_duplicates(subset=["code.after", "code.before", "adjustment"])
-            if classification_group == "SITC":
-                df = self.determine_relationship(df)
+            # if self.classification_group == "SITC":
+            df = self.determine_relationship(df)
 
-            main_df = pd.read_csv(f"comtrade_concordance/{classification_group}_consolidated_comtrade_concordances.csv", dtype={'code.before': str, 'code.after': str})
+            main_df = pd.read_csv(f"data/comtrade_concordance/{self.classification_group}_consolidated_comtrade_concordances.csv", dtype={'code.before': str, 'code.after': str})
 
             if df.adjustment.unique() in main_df.adjustment.unique():
                 print(f"already concatenated to file")
                 continue
 
             df = pd.concat([df, main_df])
-            df.to_csv(f"comtrade_concordance/{classification_group}_consolidated_comtrade_concordances.csv", index=False)
+            df.to_csv(f"data/comtrade_concordance/{self.classification_group}_consolidated_comtrade_concordances.csv", index=False)
 
 
     def extract_classifications(self,filename):
@@ -69,7 +80,6 @@ class CombineConcordances():
         classifications = [m for m in matches if m not in ["to", "Conversion", "and", "Correlation", "Tables", "xls"]]
         source, target = classifications[0], classifications[1]
         return source, target
-
 
 
     def determine_relationship(self,concordance_df):
@@ -134,16 +144,161 @@ class CombineConcordances():
             concordance = pd.DataFrame({
                 'code.after': concordance.iloc[:, 0].astype(str),
                 'code.before': concordance.iloc[:, 1].astype(str),
-                'Relationship': corr.iloc[:, 2],
+                'Relationship': concordance.iloc[:, 2],
                 'adjustment': f"{source_year} to {target_year}"
             })
         elif direction == "forward":
             concordance = pd.DataFrame({
-                'code.after': corr.iloc[:, 1].astype(str),
-                'code.before': corr.iloc[:, 0].astype(str),
-                'Relationship': corr.iloc[:, 2],
+                'code.after': concordance.iloc[:, 1].astype(str),
+                'code.before': concordance.iloc[:, 0].astype(str),
+                'Relationship': concordance.iloc[:, 2],
                 'adjustment': f"{source_year} to {target_year}"
             })
         return concordance
 
+    def get_source_product_level(self, year):
+        """Determine product code length based on year."""
+        return self.SITC_DETAIL_PRODUCT_CODE_LENGTH if int(year) <= self.SITC_YEAR_CUTOFF else self.HS_DETAIL_PRODUCT_CODE_LENGTH
 
+
+    def find_mapped_source_code(self, target_code, adjustment_period, mappings):
+        """
+        Try to find a mapping for the target code by progressively truncating it.
+        
+        Returns:
+            tuple: (source_code, was_found) or (None, False) if not found
+        """
+        current_code = target_code
+        
+        for _ in range(self.MAX_TRUNCATION_ATTEMPTS):
+            if current_code in mappings.get(adjustment_period, {}):
+                return mappings[adjustment_period][current_code], True
+            current_code = current_code[:-1]
+        return None, False
+
+
+    def expand_partial_code(self, missing_classification, code, product_level, adjustment_period, concordance):
+        """
+        Expand a partial source code to all matching detailed codes.
+        """
+        col = "code.after" if missing_classification == "source" else "code.before"
+        if len(code) < product_level:
+            matching_codes = concordance[
+                (concordance.adjustment == adjustment_period) & 
+                (concordance[col].str.startswith(code))
+            ][col].unique().tolist()
+            return matching_codes if matching_codes else None
+        return [code]
+
+
+
+    def handle_no_concordances(self, concordance, non_concorded_df):
+        """
+        Handle cases where there is no concordance between the source and target
+        """
+        non_corded_product_matches = {
+            "1976 to 1962": {
+                "6514": "6516",
+                "9710" : "897",  # rolled up
+            },
+            "1992 to 1988": {
+                "9110": "999999",
+                "9310": "999999",
+                "334": "2710",
+                "2710": "334",
+                "380999": "5989",
+                "999999": "9999",
+                "9999AA": "9999",
+            },
+            "1996 to 1992": {
+                "2710": "2710",
+                "999999": "999999",
+                "9999AA": "999999",
+            },
+            "2002 to 1996": {
+                "2710": "2710",
+                "999999": "999999",
+                "9999AA": "999999",
+            },
+            "2007 to 2002": {
+                "999999": "999999",
+                "9999AA": "999999",
+            },
+            "2012 to 2007": {
+                "291636": "291616",  # Binapacryl (ISO)
+                "999999": "999999",
+                "9999AA": "999999",
+            },
+            "2017 to 2012": {
+                "999999": "999999",
+                "9999AA": "999999",
+            },
+            "2022 to 2017": {
+                "300219": "3002"
+            }
+        }
+        adjustments = concordance.adjustment.unique()
+        # remove adjustment period if not in concordance from non_corded_product_matches
+        non_corded_product_matches = {k: v for k, v in non_corded_product_matches.items() if k in adjustments}
+
+        concorded_products = []
+
+        for row in non_concorded_df.itertuples(index=False):
+            if row.adjustment not in non_corded_product_matches:
+                continue
+            missing_classification = row.missing_classification
+            adjustment_period = row.adjustment
+            code = str(row.id)  # Convert to string for consistency
+            if missing_classification == "source":
+                missing_year = row.adjustment.split(" to ")[0]
+            else:
+                missing_year = row.adjustment.split(" to ")[1]
+
+            # Try to find a manual mapping
+            missing_code, found = self.find_mapped_source_code(
+                code, 
+                adjustment_period, 
+                non_corded_product_matches
+            )
+
+            if not found:
+                # No mapping found - use the original code
+                import pdb; pdb.set_trace()
+                raise ValueError(f"No mapping found for {code} in {adjustment_period}")
+            else:
+                # Determine the expected product code length
+                product_level = self.get_source_product_level(missing_year)
+
+                missing_code_list = self.expand_partial_code(
+                    missing_classification,
+                    missing_code, 
+                    product_level, 
+                    adjustment_period, 
+                    concordance
+                )
+
+                if missing_code_list is None:
+                    missing_code_list = [code]
+
+            for missing_code in missing_code_list:
+                if missing_classification == "source":
+                    concorded_products.append({
+                        'code.before': missing_code,
+                        'code.after': code,
+                        'adjustment': adjustment_period
+                    })
+                else:
+                    concorded_products.append({
+                        'code.before': code,
+                        'code.after': missing_code,
+                        'adjustment': adjustment_period
+                    })
+
+        if concorded_products:
+            new_rows_df = pd.DataFrame(concorded_products)
+            new_df =  pd.concat([concordance, new_rows_df], ignore_index=True)
+            new_df.drop_duplicates(subset=["code.before", "code.after", "adjustment"], inplace=True)
+            import pdb; pdb.set_trace()
+            return new_df
+        import pdb; pdb.set_trace()
+        return concordance
