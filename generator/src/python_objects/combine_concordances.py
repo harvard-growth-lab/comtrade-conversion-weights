@@ -247,7 +247,6 @@ class CombineConcordances():
             all_products = pd.read_excel(f"data/static/all_products_by_classification/{missing_classification}.xlsx", sheet_name="Sheet1", dtype=str)
             matching_codes = all_products[(all_products.id.str.startswith(code))&(all_products.id.str.len()==product_level)]['id'].unique().tolist()
             matching_codes = [code for code in matching_codes if code.isdigit()]
-            import pdb; pdb.set_trace()
             return matching_codes if matching_codes else None
         return [code]
 
