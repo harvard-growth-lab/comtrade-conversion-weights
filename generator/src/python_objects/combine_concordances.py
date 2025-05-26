@@ -41,17 +41,19 @@ class CombineConcordances():
                 if col in df.columns:
                     df[col] = df[col].astype(str)
 
-            print(f"added to consolidated concordance table")
+            print(f"added {file.split('/')[-1]} to consolidated concordance table")
             non_concorded_df = pd.read_csv(self.non_concorded_product_file, dtype={"id": str})
             df = self.handle_no_concordances(df, non_concorded_df)
             df['code.before'] = df['code.before'].apply(lambda x: x[:-1] if len(x) == 5 else x)
             df['code.after'] = df['code.after'].apply(lambda x: x[:-1] if len(x) == 5 else x)
             df = df.drop_duplicates(subset=["code.after", "code.before", "adjustment"])
             df = self.add_relationship_column(df)
-            df = df[~((df['code.before'].isna()) | (df['code.after'].isna()))]
             dfs.append(df)
 
         consolidated_df = pd.concat(dfs)
+
+        consolidated_df = consolidated_df[~((consolidated_df['code.before']=='nan') & (consolidated_df['code.after']=='nan'))]
+        consolidated_df = consolidated_df[~((consolidated_df['code.before'].isna()) | (consolidated_df['code.after'].isna()))]
         consolidated_df.to_csv(f"data/output/consolidated_concordance/consolidated_comtrade_concordances.csv", index=False)
 
 

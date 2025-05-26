@@ -126,7 +126,7 @@ for(i in 1:nrow(iterations_df)) {
   }
   
   ### Load all HS vintage correspondences:
-  all.vintages  <- read.csv("data/comtrade_concordance/HS_consolidated_comtrade_concordances.csv")
+  all.vintages  <- read.csv("data/output/consolidated_concordance/consolidated_comtrade_concordances.csv")
   ## comtrade always provides concordance tables in later classification to earlier classification
   conversion <- subset(all.vintages, adjustment == sprintf("%s to %s", year_1, year_2))
   
