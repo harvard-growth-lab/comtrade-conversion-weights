@@ -3,6 +3,8 @@ import glob
 import itertools
 import re
 from typing import Dict, List, Tuple, Set
+import numpy as np
+from scipy.sparse import csr_matrix
 
 
 
@@ -26,27 +28,14 @@ class CombineConcordances():
 
         df = pd.DataFrame(columns=['code.after','code.before','Relationship','adjustment'])
         dtype_dict = {'code.after': str, 'code.before': str}
-        # if self.classification_group == "SITC":
-        #     # overwrites previous file
-        #     df.to_csv("data/output/consolidated_concordance/SITC_consolidated_comtrade_concordances.csv", index=False)
-        # else:
-        #     df = pd.read_csv(f"data/output/consolidated_concordance/{self.classification_group}_consolidated_comtrade_concordances.csv", index_col=None, dtype={'code.before': str, 'code.after': str})
         dfs = []
         xls_concordance_files = glob.glob("data/static/comtrade_concordance/*.xls")
         xlsx_concordance_files = glob.glob("data/static/comtrade_concordance/*.xlsx")
         concordance_files = xls_concordance_files + xlsx_concordance_files
         for file in xls_concordance_files + xlsx_concordance_files:
             source, target = self.extract_classifications(file.split('/')[-1])
-            # if source.startswith("H") and target.startswith("H"):
-            #     continue
-            # print(f"concatenating file {source} to {target}")
-            # corr = pd.read_excel(file, sheet_name = f"{source}-{target} Correlations", header=0)
             df = pd.read_excel(file, sheet_name = f"Correlation Tables", header=1, dtype=str)
-
             df = self.format_concordance_table(df)
-            # if df.empty:
-            #     print(f"already concatenated to file")
-            #     continue
 
             for col in ['code.after', 'code.before']:
                 if col in df.columns:
@@ -55,21 +44,12 @@ class CombineConcordances():
             print(f"added to consolidated concordance table")
             non_concorded_df = pd.read_csv(self.non_concorded_product_file, dtype={"id": str})
             df = self.handle_no_concordances(df, non_concorded_df)
-            # df['Relationship'] = df.Relationship.str.replace(' to ', ':')
             df['code.before'] = df['code.before'].apply(lambda x: x[:-1] if len(x) == 5 else x)
             df['code.after'] = df['code.after'].apply(lambda x: x[:-1] if len(x) == 5 else x)
             df = df.drop_duplicates(subset=["code.after", "code.before", "adjustment"])
-            # if self.classification_group == "SITC":
             df = self.add_relationship_column(df)
-
+            df = df[~((df['code.before'].isna()) | (df['code.after'].isna()))]
             dfs.append(df)
-
-
-            # main_df = pd.read_csv(f"data/comtrade_concordance/{self.classification_group}_consolidated_comtrade_concordances.csv", dtype={'code.before': str, 'code.after': str})
-
-            # if df.adjustment.unique() in main_df.adjustment.unique():
-            #     print(f"already concatenated to file")
-            #     continue
 
         consolidated_df = pd.concat(dfs)
         consolidated_df.to_csv(f"data/output/consolidated_concordance/consolidated_comtrade_concordances.csv", index=False)
@@ -87,109 +67,64 @@ class CombineConcordances():
         source, target = classifications[0], classifications[1]
         return source, target
     
-
-    def add_relationship_column(self, df, 
-                            source_col='code.after', 
-                            target_col='code.before',
-                            adjustment_col='adjustment'):
+    def add_relationship_column(self, df):
         """
-        Add a relationship column to the concordance dataframe that identifies
-        the type of relationship (1:1, 1:n, n:1, n:n) for each mapping within
-        its adjustment group.
-        
-        Parameters:
-        -----------
-        df : pd.DataFrame
-            DataFrame with concordance mappings
-        source_col : str
-            Column name for source codes (default: 'code.after')
-        target_col : str
-            Column name for target codes (default: 'code.before')
-        adjustment_col : str
-            Column name for adjustment groups (default: 'adjustment')
-        
-        Returns:
-        --------
-        pd.DataFrame
-            Original dataframe with added 'relationship' column
+        Add a relationship column based on sparse matrix analysis 
+        grouped by adjustment period
         """
+        result_df = df.copy()
+        result_df['Relationship'] = ''
         
-        # Create a copy to avoid modifying the original
-        df_result = df.copy()
-        
-        # Initialize relationship column
-        df_result['relationship'] = None
-        
-        # Process each adjustment group separately
-        for adjustment in df[adjustment_col].unique():
-            # Get subset for this adjustment group
-            mask = df[adjustment_col] == adjustment
-            df_group = df[mask]
+        # Group by adjustment period
+        for adjustment_period in df['adjustment'].unique():
+            period_mask = df['adjustment'] == adjustment_period
+            period_df = df[period_mask]
             
-            # Remove duplicates within the group
-            df_unique = df_group[[source_col, target_col]].drop_duplicates()
+            # Get unique codes for this period
+            unique_after = period_df['code.after'].unique()
+            unique_before = period_df['code.before'].unique()
             
-            # Count mappings for each source
-            source_counts = df_unique.groupby(source_col)[target_col].count()
+            # Create mappings
+            after_to_idx = {code: idx for idx, code in enumerate(unique_after)}
+            before_to_idx = {code: idx for idx, code in enumerate(unique_before)}
             
-            # Count mappings for each target
-            target_counts = df_unique.groupby(target_col)[source_col].count()
+            # Create sparse matrix
+            row_indices = [after_to_idx[code] for code in period_df['code.after']]
+            col_indices = [before_to_idx[code] for code in period_df['code.before']]
+            data_values = np.ones(len(period_df))
             
-            # Create mapping dictionaries
-            source_to_count = source_counts.to_dict()
-            target_to_count = target_counts.to_dict()
+            sparse_matrix = csr_matrix(
+                (data_values, (row_indices, col_indices)), 
+                shape=(len(unique_after), len(unique_before))
+            )
             
-            # For n:n detection, we need to check if sources share targets
-            source_to_targets = df_unique.groupby(source_col)[target_col].apply(list).to_dict()
-            target_to_sources = df_unique.groupby(target_col)[source_col].apply(list).to_dict()
+            # Calculate connection counts
+            row_sums = np.array(sparse_matrix.sum(axis=1)).flatten()
+            col_sums = np.array(sparse_matrix.sum(axis=0)).flatten()
             
-            # Determine relationship for each row in the group
-            for idx in df_group.index:
-                source = df.loc[idx, source_col]
-                target = df.loc[idx, target_col]
+            # Determine relationship type for each row in this period
+            for idx in period_df.index:
+                code_after = df.loc[idx, 'code.after']
+                code_before = df.loc[idx, 'code.before']
                 
-                source_count = source_to_count.get(source, 0)
-                target_count = target_to_count.get(target, 0)
+                after_idx = after_to_idx[code_after]
+                before_idx = before_to_idx[code_before]
                 
-                # Check if this is part of an n:n relationship
-                # A mapping is n:n if:
-                # 1. The source maps to multiple targets AND
-                # 2. At least one of those targets also receives from other sources
-                is_n_to_n = False
+                after_connections = row_sums[after_idx]
+                before_connections = col_sums[before_idx]
                 
-                if source_count > 1:
-                    # Source maps to multiple targets
-                    targets_of_source = source_to_targets.get(source, [])
-                    for t in targets_of_source:
-                        if target_to_count.get(t, 0) > 1:
-                            # This target also receives from multiple sources
-                            is_n_to_n = True
-                            break
-                
-                if target_count > 1 and not is_n_to_n:
-                    # Target receives from multiple sources
-                    sources_of_target = target_to_sources.get(target, [])
-                    for s in sources_of_target:
-                        if source_to_count.get(s, 0) > 1:
-                            # This source also maps to multiple targets
-                            is_n_to_n = True
-                            break
-                
-                if is_n_to_n:
-                    relationship = 'n:n'
-                elif source_count == 1 and target_count == 1:
-                    relationship = '1:1'
-                elif source_count == 1 and target_count > 1:
-                    relationship = 'n:1'
-                elif source_count > 1 and target_count == 1:
-                    relationship = '1:n'
+                if after_connections == 1 and before_connections == 1:
+                    relationship_type = '1:1'
+                elif after_connections == 1 and before_connections > 1:
+                    relationship_type = 'n:1'
+                elif after_connections > 1 and before_connections == 1:
+                    relationship_type = '1:n'
                 else:
-                    # This shouldn't happen if logic is correct
-                    raise ValueError(f"Relationship not found for {source} to {target} in adjustment {adjustment}")
+                    relationship_type = 'n:n'
                 
-                df_result.loc[idx, 'relationship'] = relationship
+                result_df.loc[idx, 'Relationship'] = relationship_type
         
-        return df_result
+        return result_df
     
 
     def format_concordance_table(self, concordance):
