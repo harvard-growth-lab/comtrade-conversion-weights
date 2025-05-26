@@ -80,29 +80,26 @@ class CombineConcordances():
             period_mask = df['adjustment'] == adjustment_period
             period_df = df[period_mask]
             
-            # Get unique codes for this period
             unique_after = period_df['code.after'].unique()
             unique_before = period_df['code.before'].unique()
             
-            # Create mappings
+            # index mapping for each code
             after_to_idx = {code: idx for idx, code in enumerate(unique_after)}
             before_to_idx = {code: idx for idx, code in enumerate(unique_before)}
             
-            # Create sparse matrix
             row_indices = [after_to_idx[code] for code in period_df['code.after']]
             col_indices = [before_to_idx[code] for code in period_df['code.before']]
-            data_values = np.ones(len(period_df))
+            num_rows, _ = period_df.shape
+            data_values = np.ones(num_rows)
             
             sparse_matrix = csr_matrix(
                 (data_values, (row_indices, col_indices)), 
-                shape=(len(unique_after), len(unique_before))
+                shape=(len(unique_after), len(unique_before)),
+                dtype=np.int8,
             )
-            
-            # Calculate connection counts
             row_sums = np.array(sparse_matrix.sum(axis=1)).flatten()
             col_sums = np.array(sparse_matrix.sum(axis=0)).flatten()
             
-            # Determine relationship type for each row in this period
             for idx in period_df.index:
                 code_after = df.loc[idx, 'code.after']
                 code_before = df.loc[idx, 'code.before']
@@ -110,6 +107,7 @@ class CombineConcordances():
                 after_idx = after_to_idx[code_after]
                 before_idx = before_to_idx[code_before]
                 
+                # gets the number of connections a code has in the target and source
                 after_connections = row_sums[after_idx]
                 before_connections = col_sums[before_idx]
                 
@@ -119,11 +117,11 @@ class CombineConcordances():
                     relationship_type = 'n:1'
                 elif after_connections > 1 and before_connections == 1:
                     relationship_type = '1:n'
+                # remaining are n:n
                 else:
                     relationship_type = 'n:n'
                 
                 result_df.loc[idx, 'Relationship'] = relationship_type
-        
         return result_df
     
 
