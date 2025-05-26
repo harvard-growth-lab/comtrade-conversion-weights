@@ -259,7 +259,6 @@ class CombineConcordances():
 
             if not found:
                 # No mapping found - use the original code
-                import pdb; pdb.set_trace()
                 raise ValueError(f"No mapping found for {code} in {adjustment_period}")
             else:
                 # Determine the expected product code length
