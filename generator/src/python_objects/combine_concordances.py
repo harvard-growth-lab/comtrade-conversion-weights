@@ -5,6 +5,7 @@ import re
 from typing import Dict, List, Tuple, Set
 import numpy as np
 from scipy.sparse import csr_matrix
+from src.utils.util import get_detailed_product_level
 
 
 
@@ -14,7 +15,13 @@ class CombineConcordances():
     HS_DETAIL_PRODUCT_CODE_LENGTH = 6
     SITC_YEAR_CUTOFF = 1988
     MAX_TRUNCATION_ATTEMPTS = 4
-    non_concorded_product_file = "data/static/product_missing_concordance.csv"
+    # non_concorded_product_file = "data/static/product_missing_concordance.csv"
+
+
+    RELEASE_YEARS = {"SITC1" : 1962, "SITC2": 1976, "SITC3": 1988, 
+                     "H0": 1992, "H1": 1996, "H2": 2002, 
+                     "H3": 2007, "H4": 2012, "H5": 2017, "H6": 2022}
+
 
     def __init__(self):
         self.concatentate_concordance_to_main()
@@ -32,8 +39,9 @@ class CombineConcordances():
         xls_concordance_files = glob.glob("data/static/comtrade_concordance/*.xls")
         xlsx_concordance_files = glob.glob("data/static/comtrade_concordance/*.xlsx")
         concordance_files = xls_concordance_files + xlsx_concordance_files
-        for file in xls_concordance_files + xlsx_concordance_files:
+        for file in concordance_files:
             source, target = self.extract_classifications(file.split('/')[-1])
+            import pdb; pdb.set_trace()
             df = pd.read_excel(file, sheet_name = f"Correlation Tables", header=1, dtype=str)
             df = self.format_concordance_table(df)
 
@@ -42,7 +50,15 @@ class CombineConcordances():
                     df[col] = df[col].astype(str)
 
             print(f"added {file.split('/')[-1]} to consolidated concordance table")
-            non_concorded_df = pd.read_csv(self.non_concorded_product_file, dtype={"id": str})
+            non_concorded_products = []
+            for classification_type, classification in [("source", source), ("target", target)]:
+                print(f"loading in {classification} products")
+                products = pd.read_excel(f"data/static/all_products_by_classification/{classification}.xlsx", sheet_name="Sheet1", dtype=str)
+                non_concorded_df = self.find_non_concorded_products(classification_type, classification, df, products)
+                non_concorded_products.append(non_concorded_df)
+            non_concorded_df = pd.concat(non_concorded_products)
+            import pdb; pdb.set_trace()
+            # non_concorded_df = pd.read_csv(self.non_concorded_product_file, dtype={"id": str})
             df = self.handle_no_concordances(df, non_concorded_df)
             df['code.before'] = df['code.before'].apply(lambda x: x[:-1] if len(x) == 5 else x)
             df['code.after'] = df['code.after'].apply(lambda x: x[:-1] if len(x) == 5 else x)
@@ -54,20 +70,21 @@ class CombineConcordances():
 
         consolidated_df = consolidated_df[~((consolidated_df['code.before']=='nan') & (consolidated_df['code.after']=='nan'))]
         consolidated_df = consolidated_df[~((consolidated_df['code.before'].isna()) | (consolidated_df['code.after'].isna()))]
-        consolidated_df.to_csv(f"data/output/consolidated_concordance/consolidated_comtrade_concordances.csv", index=False)
+        consolidated_df.to_csv(f"data/output/consolidated_concordance/consolidated_comtrade_concordancesv2.csv", index=False)
 
 
     def extract_classifications(self,filename):
         # Pattern to match classifications: letters followed by optional digits
-        pattern = r'([A-Za-z]+\d*)'
-        
-        # Find all matches
-        matches = re.findall(pattern, filename)
-        
-        # Filter out non-classification words like "to", "Conversion", etc.
-        classifications = [m for m in matches if m not in ["to", "Conversion", "and", "Correlation", "Tables", "xls"]]
-        source, target = classifications[0], classifications[1]
-        return source, target
+        years = re.findall(r'\b\d{4}\b', filename)
+        if years:
+            source_classification = [k for k, v in self.RELEASE_YEARS.items() if v == int(years[0])][0]
+            target_classification = [k for k, v in self.RELEASE_YEARS.items() if v == int(years[1])][0]
+            return source_classification, target_classification
+        else:
+            pattern = r'([A-Za-z]+\d*)'
+            matches = re.findall(pattern, filename)
+            classifications = [m for m in matches if m not in ["to", "Conversion", "and", "Correlation", "Tables", "xls"]]
+            return classifications[0], classifications[1]
     
     def add_relationship_column(self, df):
         """
@@ -184,6 +201,33 @@ class CombineConcordances():
             matching_codes = [code for code in matching_codes if code.isdigit()]
             return matching_codes if matching_codes else None
         return [code]
+    
+    def find_non_concorded_products(self, classification_type, classification, concordance, products):
+        """
+        Find products that are not concorded in the concordance table
+        """
+        detailed_product_level = get_detailed_product_level(classification)
+        missing_products = []
+        adjustment_period = concordance.adjustment.unique().tolist()[0]
+        if classification_type == "source":
+            col = "code.after"
+            release_year = adjustment_period.split(" to ")[0]
+        elif classification_type == "target":
+            col = "code.before"
+            release_year = adjustment_period.split(" to ")[1]
+        products = products[products.aggrlevel == f"{detailed_product_level}"]
+        # drop products with non digits characters
+        products = products[products['id'].str.isdigit()]
+        missing_products_df = products[~products['id'].str[:detailed_product_level].isin(concordance[col].str[:detailed_product_level].unique().tolist())]
+
+        new_columns = {
+            'adjustment': adjustment_period,
+            'missing_classification_type': classification_type,
+            'missing_year': release_year,
+            'missing_classification': classification
+        }
+        missing_products_df = missing_products_df.assign(**new_columns)
+        return missing_products_df[['adjustment','id','text','missing_classification_type', 'missing_year', 'missing_classification']]
 
 
 
@@ -243,8 +287,8 @@ class CombineConcordances():
         for row in non_concorded_df.itertuples(index=False):
             if row.adjustment not in non_corded_product_matches:
                 continue
-            missing_classification_type = row.missing_classification
-            missing_classification = row.missing_product_classification
+            missing_classification_type = row.missing_classification_type
+            missing_classification = row.missing_classification
             adjustment_period = row.adjustment
             code = str(row.id)  # Convert to string for consistency
             if missing_classification_type == "source":
