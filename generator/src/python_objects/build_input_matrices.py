@@ -58,9 +58,9 @@ class MatrixBuilder():
                 files_target = []
                 files_source = []
                 for year in range(target_year, target_year + avg_range):
-                    files_target += glob.glob(os.path.join(raw_parquet_path, target_class, year, "*.parquet"))
+                    files_target += glob.glob(os.path.join(raw_parquet_path, target_class, str(year), "*.parquet"))
                 for year in range(source_year - 1, source_year + 2):
-                    files_source += glob.glob(os.path.join(raw_parquet_path, source_class, year, "*.parquet"))
+                    files_source += glob.glob(os.path.join(raw_parquet_path, source_class, str(year), "*.parquet"))
             else:
                 files_target = glob.glob(os.path.join(raw_parquet_path, target_class, str(target_year), "*.parquet"))
                 files_source = glob.glob(os.path.join(raw_parquet_path, source_class, str(source_year), "*.parquet"))

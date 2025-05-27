@@ -5,6 +5,7 @@ from src.python_objects.prep_for_pipeline import PipelineWeightPrep
 def run():
     # Combined data structure for all conversion pairs
     conversion_pairs = [
+         # Backward HS conversions
         {
             'direction': 'backward',
             'from_class': 'H1',
@@ -13,14 +14,14 @@ def run():
             'to_year': '1995',
             'enabled': True
         },
-        # Backward HS conversions
+       
         {
             'direction': 'backward',
             'from_class': 'H2',
             'to_class': 'H1',
             'from_year': '2002',
             'to_year': '2001',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'backward',
@@ -28,7 +29,7 @@ def run():
             'to_class': 'H2',
             'from_year': '2007',
             'to_year': '2006',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'backward',
@@ -36,7 +37,7 @@ def run():
             'to_class': 'H3',
             'from_year': '2012',
             'to_year': '2011',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'backward',
@@ -44,7 +45,7 @@ def run():
             'to_class': 'H4',
             'from_year': '2017',
             'to_year': '2016',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'backward',
@@ -52,7 +53,7 @@ def run():
             'to_class': 'H5',
             'from_year': '2022',
             'to_year': '2021',
-            'enabled': False
+            'enabled': True
         },
         # SITC conversions
         {
@@ -61,7 +62,7 @@ def run():
             'to_class': 'S3',
             'from_year': '1992',
             'to_year': '1988',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'backward',
@@ -69,7 +70,7 @@ def run():
             'to_class': 'S2',
             'from_year': '1988',
             'to_year': '1987',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'backward',
@@ -77,7 +78,7 @@ def run():
             'to_class': 'S1',
             'from_year': '1987',
             'to_year': '1976',
-            'enabled': False
+            'enabled': True
         },
         # Forward HS conversions
         {
@@ -86,7 +87,7 @@ def run():
             'to_class': 'H1',
             'from_year': '1995',
             'to_year': '1996',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'forward',
@@ -94,7 +95,7 @@ def run():
             'to_class': 'H2',
             'from_year': '2001',
             'to_year': '2002',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'forward',
@@ -102,7 +103,7 @@ def run():
             'to_class': 'H3',
             'from_year': '2006',
             'to_year': '2007',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'forward',
@@ -110,7 +111,7 @@ def run():
             'to_class': 'H4',
             'from_year': '2011',
             'to_year': '2012',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'forward',
@@ -118,7 +119,7 @@ def run():
             'to_class': 'H5',
             'from_year': '2016',
             'to_year': '2017',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'forward',
@@ -126,7 +127,7 @@ def run():
             'to_class': 'H6',
             'from_year': '2021',
             'to_year': '2022',
-            'enabled': False
+            'enabled': True
         },
         # Forward SITC conversions
         {
@@ -135,7 +136,7 @@ def run():
             'to_class': 'H0',
             'from_year': '1988',
             'to_year': '1992',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'forward',
@@ -143,7 +144,7 @@ def run():
             'to_class': 'S3',
             'from_year': '1987',
             'to_year': '1988',
-            'enabled': False
+            'enabled': True
         },
         {
             'direction': 'forward',
@@ -151,7 +152,7 @@ def run():
             'to_class': 'S2',
             'from_year': '1975',
             'to_year': '1976',
-            'enabled': False
+            'enabled': True
         }
     ]
 
@@ -170,8 +171,8 @@ def run():
     ]
 
     # Initialize and run matrix builder
-    # matrix_builder = MatrixBuilder(weight_tables)
-    # matrix_builder.run()
+    matrix_builder = MatrixBuilder(weight_tables)
+    matrix_builder.run()
 
     # Initialize and run pipeline weight preparation
     pipeline_weight_prep = PipelineWeightPrep(conversion_years)
