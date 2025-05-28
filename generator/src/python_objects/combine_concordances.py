@@ -41,7 +41,6 @@ class CombineConcordances():
         concordance_files = xls_concordance_files + xlsx_concordance_files
         for file in concordance_files:
             source, target = self.extract_classifications(file.split('/')[-1])
-            import pdb; pdb.set_trace()
             df = pd.read_excel(file, sheet_name = f"Correlation Tables", header=1, dtype=str)
             df = self.format_concordance_table(df)
 
@@ -51,26 +50,29 @@ class CombineConcordances():
 
             print(f"added {file.split('/')[-1]} to consolidated concordance table")
             non_concorded_products = []
+            non_concorded_df = pd.DataFrame()
+            non_concorded_df.to_csv(f"data/output/non_concorded_products.csv", index=False, mode='a')
             for classification_type, classification in [("source", source), ("target", target)]:
                 print(f"loading in {classification} products")
                 products = pd.read_excel(f"data/static/all_products_by_classification/{classification}.xlsx", sheet_name="Sheet1", dtype=str)
                 non_concorded_df = self.find_non_concorded_products(classification_type, classification, df, products)
                 non_concorded_products.append(non_concorded_df)
             non_concorded_df = pd.concat(non_concorded_products)
-            import pdb; pdb.set_trace()
-            # non_concorded_df = pd.read_csv(self.non_concorded_product_file, dtype={"id": str})
-            df = self.handle_no_concordances(df, non_concorded_df)
+            non_concorded_df.to_csv(f"data/output/non_concorded_products.csv", index=False, mode='a')
             df['code.before'] = df['code.before'].apply(lambda x: x[:-1] if len(x) == 5 else x)
             df['code.after'] = df['code.after'].apply(lambda x: x[:-1] if len(x) == 5 else x)
-            df = df.drop_duplicates(subset=["code.after", "code.before", "adjustment"])
+            df = self.handle_no_concordances(df, non_concorded_df)
+            
+            #df = df.drop_duplicates(subset=["code.after", "code.before", "adjustment"])
             df = self.add_relationship_column(df)
             dfs.append(df)
 
         consolidated_df = pd.concat(dfs)
-
+        consolidated_df = consolidated_df[~consolidated_df['code.before'].isin(["I", "II"])]
         consolidated_df = consolidated_df[~((consolidated_df['code.before']=='nan') & (consolidated_df['code.after']=='nan'))]
         consolidated_df = consolidated_df[~((consolidated_df['code.before'].isna()) | (consolidated_df['code.after'].isna()))]
-        consolidated_df.to_csv(f"data/output/consolidated_concordance/consolidated_comtrade_concordancesv2.csv", index=False)
+
+        consolidated_df.to_csv(f"data/output/consolidated_concordance/consolidated_comtrade_concordances.csv", index=False)
 
 
     def extract_classifications(self,filename):
@@ -190,17 +192,17 @@ class CombineConcordances():
         return None, False
 
 
-    def expand_partial_code(self, missing_classification_type, missing_classification, code, product_level, adjustment_period, concordance):
+    def expand_partial_code(self, missing_classification_type, missing_classification, matched_code, product_level, adjustment_period, concordance):
         """
         Expand a partial source code to all matching detailed codes.
         """
         col = "code.after" if missing_classification_type == "source" else "code.before"
-        if len(code) < product_level:
+        if len(matched_code) < product_level:
             all_products = pd.read_excel(f"data/static/all_products_by_classification/{missing_classification}.xlsx", sheet_name="Sheet1", dtype=str)
-            matching_codes = all_products[(all_products.id.str.startswith(code))&(all_products.id.str.len()==product_level)]['id'].unique().tolist()
+            matching_codes = all_products[(all_products.id.str.startswith(matched_code))&(all_products.id.str.len()==product_level)]['id'].unique().tolist()
             matching_codes = [code for code in matching_codes if code.isdigit()]
             return matching_codes if matching_codes else None
-        return [code]
+        return [matched_code]
     
     def find_non_concorded_products(self, classification_type, classification, concordance, products):
         """
@@ -285,19 +287,22 @@ class CombineConcordances():
         concorded_products = []
 
         for row in non_concorded_df.itertuples(index=False):
-            if row.adjustment not in non_corded_product_matches:
-                continue
+            # if row.adjustment not in non_corded_product_matches:
+            #     continue
             missing_classification_type = row.missing_classification_type
             missing_classification = row.missing_classification
             adjustment_period = row.adjustment
-            code = str(row.id)  # Convert to string for consistency
+            code = str(row.id)
             if missing_classification_type == "source":
-                missing_year = row.adjustment.split(" to ")[0]
+                missing_year, matching_year = row.adjustment.split(" to ")[0], row.adjustment.split(" to ")[1]
+                matching_classification_type = "target"
+                matching_classification = [k for k, v in self.RELEASE_YEARS.items() if v == int(row.adjustment.split(" to ")[1])][0]
             else:
-                missing_year = row.adjustment.split(" to ")[1]
-
+                missing_year, matching_year = row.adjustment.split(" to ")[1], row.adjustment.split(" to ")[0]
+                matching_classification_type = "source"
+                matching_classification = [k for k, v in self.RELEASE_YEARS.items() if v == int(row.adjustment.split(" to ")[0])][0]
             # Try to find a manual mapping
-            missing_code, found = self.find_mapped_source_code(
+            matching_code, found = self.find_mapped_source_code(
                 code, 
                 adjustment_period, 
                 non_corded_product_matches
@@ -308,34 +313,33 @@ class CombineConcordances():
                 raise ValueError(f"No mapping found for {code} in {adjustment_period}")
             else:
                 # Determine the expected product code length
-                product_level = self.get_source_product_level(missing_year)
+                product_level = self.get_source_product_level(matching_year)
 
-                missing_code_list = self.expand_partial_code(
-                    missing_classification_type,
-                    missing_classification,
-                    missing_code, 
+                matching_code_list = self.expand_partial_code(
+                    matching_classification_type,
+                    matching_classification,
+                    matching_code, 
                     product_level, 
                     adjustment_period, 
                     concordance
                 )
 
-                if missing_code_list is None:
-                    missing_code_list = [code]
+                if matching_code_list is None:
+                    matching_code_list = [code]
 
-            for missing_code in missing_code_list:
+            for matching_code in matching_code_list:
                 if missing_classification_type == "source":
                     concorded_products.append({
-                        'code.before': missing_code,
                         'code.after': code,
+                        'code.before': matching_code,
                         'adjustment': adjustment_period
                     })
                 else:
                     concorded_products.append({
+                        'code.after': matching_code,
                         'code.before': code,
-                        'code.after': missing_code,
                         'adjustment': adjustment_period
                     })
-
         if concorded_products:
             new_rows_df = pd.DataFrame(concorded_products)
             new_df =  pd.concat([concordance, new_rows_df], ignore_index=True)
