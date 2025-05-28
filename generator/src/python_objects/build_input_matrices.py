@@ -10,6 +10,8 @@ import comtradeapicall
 from pathlib import Path
 from src.utils.util import clean_groups, get_detailed_product_level
 
+pd.options.mode.copy_on_write = True
+pd.set_option('future.no_silent_downcasting', True)
 
 class MatrixBuilder():
     atlas_classifications = ["H0", "H4", "S1", "S2"]
@@ -74,8 +76,7 @@ class MatrixBuilder():
             if not groups[((groups['code.source'].isna()) | (groups['code.target'].isna()))].empty:
                 raise ValueError(f"check the concordance group file for {source_class} to {target_class} \n {groups[((groups['code.source'].isna()) | (groups['code.target'].isna()))]}")
             print(f"size after dropping nan {groups.shape}")
-            groups['code.source'] = groups['code.source'].astype(int).astype(str)
-            groups['code.target'] = groups['code.target'].astype(int).astype(str)
+            groups = groups.astype({'code.source':int, 'code.target':int}).astype({'code.source': str, 'code.target': str})
             print(f"There are {len(reporters)} reporters who switched timely from {target_class} to {source_class}")
             # from list of reporters prepare to organize data for Matlab
 
@@ -210,8 +211,8 @@ def filter_df_for_reporters(classification, df, reporters):
     df = df[(df.flowCode=="M")&(df.digitLevel==detailed_product_level)]
     reporter = comtradeapicall.getReference("reporter")
     partner = comtradeapicall.getReference("partner")
-    reporter['reporterCode'] = reporter.reporterCode.astype(str)
-    partner['PartnerCode'] = partner.PartnerCode.astype(str)
+    reporter = reporter.astype({'reporterCode': str})
+    partner = partner.astype({'PartnerCode': str})
     partner.loc[partner['PartnerCodeIsoAlpha3']=="W00", 'PartnerCodeIsoAlpha3'] = "WLD"
     
     df = df.merge(reporter[['reporterCode','reporterCodeIsoAlpha3']], left_on=['reporterISO3'], right_on="reporterCodeIsoAlpha3", how="left")
@@ -223,8 +224,7 @@ def filter_df_for_reporters(classification, df, reporters):
 def country_by_prod_trade(df, groups, classification_type, prod_class):
     dfs = {}
     for group_id in groups['group.id'].unique():
-        group = groups[groups['group.id']==group_id]
-        group = group.copy()
+        group = groups[groups['group.id']==group_id].copy()
         detailed_product_level = get_detailed_product_level(prod_class)
         if classification_type == "target":
             group.loc[:, 'code.target'] = group['code.target'].astype(str)
@@ -258,7 +258,7 @@ def conversion_matrix(groups):
     for group_id in groups['group.id'].unique():
         group = groups[groups['group.id']==group_id]
         df = group.pivot_table(values='group.id', index='code.source',columns='code.target')
-        df = df.replace(group_id, True)
+        df = df.replace(group_id, True).infer_objects(copy=False)
         df = df.fillna(False)
         dfs[group_id] = df
     return dfs

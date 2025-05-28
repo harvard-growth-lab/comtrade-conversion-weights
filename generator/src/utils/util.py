@@ -2,12 +2,13 @@ import pandas as pd
 
 
 def clean_groups(groups, source_class, target_class):
+    groups = groups.copy()
     # prep groups files
     try:
         groups = groups.drop(columns='Unnamed: 0')
     except:
         pass
-    matched_groups = groups[groups['group.id'].isna()]
+    matched_groups = groups[groups['group.id'].isna()].copy()
     groups = groups[~groups['group.id'].isna()]
     groups['group.id'] = groups['group.id'].astype(int)
     groups['code.source'] = groups['code.source'].astype(str)

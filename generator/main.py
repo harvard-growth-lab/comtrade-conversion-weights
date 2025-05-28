@@ -1,10 +1,7 @@
 from src.python_objects.build_input_matrices import MatrixBuilder
 from src.python_objects.prep_for_pipeline import PipelineWeightPrep
-
-
-def run():
-    # Combined data structure for all conversion pairs
-    conversion_pairs = [
+import os
+CONVERSION_PAIRS = [
          # Backward HS conversions
         {
             'direction': 'backward',
@@ -156,26 +153,33 @@ def run():
         }
     ]
 
+
+def run():
+    # Combined data structure for all conversion pairs
+
     # Filter enabled pairs for matrix building
     weight_tables = [
         (pair['direction'], pair['from_class'], pair['to_class'])
-        for pair in conversion_pairs
+        for pair in CONVERSION_PAIRS
         if pair['enabled']
     ]
 
     # Filter enabled pairs for pipeline preparation
     conversion_years = [
         (pair['from_class'], pair['from_year'], pair['to_class'], pair['to_year'])
-        for pair in conversion_pairs
+        for pair in CONVERSION_PAIRS
         if pair['enabled']
     ]
 
     # Initialize and run matrix builder
-    matrix_builder = MatrixBuilder(weight_tables)
-    matrix_builder.run()
+    # matrix_builder = MatrixBuilder(weight_tables)
+    # matrix_builder.run()
 
     # Initialize and run pipeline weight preparation
     pipeline_weight_prep = PipelineWeightPrep(conversion_years)
+    pipeline_weight_prep.write_matlab_params()
+    # run matlab script
+    pipeline_weight_prep.run_matlab_optimization()
     pipeline_weight_prep.run()
 
 
