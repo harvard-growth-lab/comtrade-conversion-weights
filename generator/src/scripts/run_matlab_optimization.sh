@@ -9,31 +9,42 @@
 # Load MATLAB module
 module load matlab/R2021a-fasrc01
 
-# Record start time
-start_time=$(date +%s)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+LOGS_DIR="${SCRIPT_DIR}/../logs"
+mkdir -p "$LOGS_DIR"
+
+LOG_FILE="${LOGS_DIR}/optimization_run_$(date +%Y%m%d_%H%M%S).log"
+log_message() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
 
 # Change to working directory
 cd '/n/holystore01/LABS/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/src/matlab'
 
 source /n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/temp/matlab_script_params.txt
 
-# Convert space-separated strings to arrays
-IFS=' ' read -r -a START_YEARS_ARRAY <<< "$START_YEARS"
-IFS=' ' read -r -a END_YEARS_ARRAY <<< "$END_YEARS"
-IFS=' ' read -r -a MAX_GROUPS_ARRAY <<< "$MAX_GROUPS"
+# Convert the space-separated strings into arrays
+START_YEARS=($START_YEARS)
+END_YEARS=($END_YEARS)
+MAX_GROUPS=($MAX_GROUPS)
+
+log_message "Starting optimization runs"
+log_message "Configuration:"
+log_message "Start years: ${START_YEARS[*]}"
+log_message "End years: ${END_YEARS[*]}"
+log_message "Max groups: ${MAX_GROUPS[*]}"
 
 # Set tolerance
 TOL=1e-20
 
 # Loop through all year pairs
-for i in ${!START_YEARS[@]}; do
-    echo "Processing: Start year ${START_YEARS[$i]}, End year ${END_YEARS[$i]}, Max group ${MAX_GROUPS[$i]}"
+for i in "${!START_YEARS[@]}"; do
+    log_message "Processing: Start year ${START_YEARS[i]}, End year ${END_YEARS[i]}, Max group ${MAX_GROUPS[i]}"
     
+    matlab -nosplash -nodesktop -r "start_year=${START_YEARS[i]}; end_year=${END_YEARS[i]}; groups=1:${MAX_GROUPS[i]}; tol=1e-20; diary('${LOGS_DIR}/matlab_output_${START_YEARS[i]}_${END_YEARS[i]}.log'); run('MAIN_Matlab_optimization_GL.m'); diary off; exit;" 2>&1 | tee -a "$LOG_FILE"
     
-    matlab -nosplash -nodesktop -r "start_year=${START_YEARS[$i]}; end_year=${END_YEARS[$i]}; groups=1:${MAX_GROUPS[$i]}; tol=1e-20; run('MAIN_Matlab_optimization_GL.m'); exit;"
-    
-    echo "Completed run $((i+1))/${#START_YEARS[@]}"
-    echo "----------------------------------------"
+    log_message "Completed run $((i+1))/${#START_YEARS[@]}"
+    log_message "----------------------------------------"
 done
 
-echo "All runs completed"
+log_message "All runs completed"
