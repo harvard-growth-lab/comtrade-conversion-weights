@@ -6,7 +6,7 @@ from collections import defaultdict
 import os
 import subprocess
 
-class PipelineWeightPrep:
+class MatlabProgramRunner:
     def __init__(self, conversion_years):
         self.conversion_years = conversion_years
 
@@ -91,6 +91,145 @@ class PipelineWeightPrep:
             print(f"Unexpected error: {e}")
 
 
+# converted_files_dtypes = {
+#         "reporterCode":str,
+#         "flowCode":str,
+#         "partnerCode":str,
+#         "cmdCode": str,
+#         "qty":float,
+#         "CIFValue":float,
+#         "FOBValue":float,
+#         "primaryValue":float,
+# }
+
+# RELEASE_YEARS = {"S1" : 1962, "S2": 1976, "S3": 1988, #"S4": 2007,
+#                  "H0": 1988, "H1": 1996, "H2": 2002, "H3": 2007, "H4": 2012, "H5": 2017, "H6": 2022}
+ 
+# conversion_links = ["H6", "H5", "H4", "H3", "H2", "H1", "H0", "S3", "S2", "S1"]
+
+# atlas_classes = ["H0"] #"H0", 
+
+# for direction in ["backward", "forward"]:
+#     if direction == "backward":
+#         conversion_links.reverse()
+#         final_class = "H0"
+#     else:
+#         final_class = "H6"
+    
+#     print(f"starting {direction} in this order {conversion_links}")
+
+#     for i, source_class in enumerate(conversion_links):
+#         if source_class == final_class:
+#             # set up to move raw parquet as reported directly to converted 
+#             continue
+#         next_class = conversion_links[i + 1]
+        
+#         if source_class.startswith("H"):
+#             detailed_product_level = 6
+#         else:
+#             detailed_product_level = 4
+#         if next_class.startswith("H"):
+#             detailed_product_level = 6
+#         else:
+#             detailed_product_level = 4
+
+#         print(f"next class {next_class}")
+#         if direction == "backward":
+#             source_year = RELEASE_YEARS[source_class]
+#             target_year = source_year - 1
+#         else: # forward
+#             target_year = RELEASE_YEARS[next_class]
+#             source_year = target_year - 1
+            
+#         if source_class in ["H0", "S3"] and target_class in ["H0", "S3"]:
+#             if source_class == "H0":
+#                 source_year = 1992
+#                 target_year = 1988
+#             else:
+#                 source_year = 1988
+#                 target_year = 1992
+
+#         for as_reported_year in range(start_year, end_year):
+#             print(f"converting {as_reported_year} from {source_class} to {next_class}.")
+#             logging.info(f"converting {as_reported_year} from {source_class} to {next_class}.")
+#             files_source = glob.glob(f"/n/hausmann_lab/lab/atlas/data/as_reported/raw_parquet/{source_class}/{as_reported_year}/*.parquet")
+#             # intermediate_files = glob.glob(f"/n/hausmann_lab/lab/atlas/data/as_reported/intermediate_converted/{source_class}/{as_reported_year}/*.parquet")
+#             # files_source = files_source + intermediate_files
+#             for file in files_source:
+#                 file = file.split('/')[-1]
+#                 result = pd.DataFrame()
+#                 try:
+#                     source = pd.read_parquet(f"/n/hausmann_lab/lab/atlas/data/as_reported/raw_parquet/{source_class}/{as_reported_year}/{file}")
+#                     import pdb
+#                     pdb.set_trace()
+#                 except:
+#                     continue
+#                 source['cmdCode'] = source.cmdCode.astype(str)
+#                 reporter_code = ComtradeFile(file).reporter_code
+#                 logging.info(f"reporter: {reporter_code}, file being converted: {file}")
+#                 # generate group_dfs
+#                 for group_file in glob.glob(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/paper/product_conversion/DataAtlas/conversion.matrix.start.{source_year}.end.{target_year}.group.*.csv"):
+#                     match = re.search(r'group\.(\d+)\.csv$', group_file)
+#                     gid = match.group(1)
+#                     # group_df = pd.read_csv(group_file, index_col=None)
+#                     weights = pd.read_csv(f"Results/conversion.weights.start.{source_year}.end.{target_year}.group.{gid}.csv", header=None)
+#                     conversion = pd.read_csv(f"DataAtlas/conversion.matrix.start.{source_year}.end.{target_year}.group.{gid}.csv")
+#                     conversion['code.source'] = conversion['code.source'].astype(str)
+#                     conversion.loc[conversion['code.source'].str.len().isin([5, 4, 3]), "code.source"] = conversion['code.source'].str.zfill(6)
+
+#                     conversion = conversion.set_index('code.source')
+#                     # filter for products in group
+#                     source_products = conversion.index.tolist()
+#                     source_group = source[source.cmdCode.isin([str(source) for source in source_products])]
+#                     df = run_conversion(weights, conversion, source_group, detailed_product_level)
+#                     import pdb; pdb.set_trace()
+
+#                     df['group_id'] = gid
+#                     result = pd.concat([result, df], axis=0)
+#                 # handle 1:1, n:1 matches
+#                 groups = pd.read_csv(f"data_groups/from_{source_class}_to_{next_class}.csv")
+#                 matched_groups, _ = clean_groups(groups, source_class, next_class)
+#                 matched_products = matched_groups['code.source'].unique().tolist()
+#                 matched = source[source['cmdCode'].isin(matched_products)]
+                    
+#                 for col in ['code.source','code.target']:
+#                     matched_groups[col] = matched_groups[col].astype(str)
+#                     matched_groups[col] = matched_groups[col].apply(
+#                         lambda x: x.zfill(detailed_product_level) if len(x) < detailed_product_level and x != "TOTAL" else x
+#                         )
+                    
+#                 matched = matched.merge(matched_groups[['code.source','code.target']], left_on='cmdCode', right_on='code.source', how='left').drop(columns=['code.source','cmdCode'])
+
+#                 if not matched.empty:
+#                     matched = matched.rename(columns={"code.target":"cmdCode"})
+#                     result = pd.concat([result, matched])
+
+#                 import pdb; pdb.set_trace()
+#                 result = add_product_levels(result)
+#                 result['isAggregate'] = 1
+#                 result = result.drop(columns='level')
+#                 result = result.astype(converted_files_dtypes)
+#                 f = ComtradeFile(file)
+#                 f.swap_classification(next_class)
+#                 path = Path(f"/n/hausmann_lab/lab/atlas/data/as_reported/intermediate_converted/{next_class}/{as_reported_year}")
+#                 path.mkdir(parents=True, exist_ok=True)
+                
+#                 for col in result.select_dtypes(include=['string', 'object', 'category']).columns:
+#                     result[col] = result[col].astype(str)
+
+#                 result.to_parquet(f"/n/hausmann_lab/lab/atlas/data/as_reported/intermediate_converted/{next_class}/{as_reported_year}/{f.name}", index=False)
+#                 logging.info(f"saving to intermediate converted file {f.name}")
+#                 if next_class in atlas_classes:
+#                     path = Path(f"/n/hausmann_lab/lab/atlas/data/as_reported/converted/{next_class}/{as_reported_year}")
+#                     path.mkdir(parents=True, exist_ok=True)
+#                     result.to_parquet(f"/n/hausmann_lab/lab/atlas/data/as_reported/converted/{next_class}/{as_reported_year}/{f.name}", index=False)
+#                     logging.info(f"saving to final converted file {f.name}")
+
+
+
+class GroupWeights:
+    def __init__(self):
+        pass
 
     def run(self):
         for source_class, start_year, target_class, end_year in self.conversion_years:

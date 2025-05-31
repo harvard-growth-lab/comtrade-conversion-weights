@@ -22,10 +22,10 @@ class MatrixBuilder():
 
     def __init__(self, weight_tables):
         self.weight_tables = weight_tables
-        self.run()
+        self.build()
     
 
-    def run(self):
+    def build(self):
         """
         generates conversion and trade values matrices that is 
         ready for matlab code to generate conversion weights
@@ -54,31 +54,27 @@ class MatrixBuilder():
                     source_year = 1988
                     target_year = 1992
 
-            print(f"{target_class}: {target_year} to {source_class}: {source_year}")
-
-            if source_class in ["H0", "S3"] and target_class in ["H0", "S3"]:
                 files_target = []
                 files_source = []
                 for year in range(target_year, target_year + avg_range):
                     files_target += glob.glob(os.path.join(raw_parquet_path, target_class, str(year), "*.parquet"))
                 for year in range(source_year - 1, source_year + 2):
                     files_source += glob.glob(os.path.join(raw_parquet_path, source_class, str(year), "*.parquet"))
+            
             else:
                 files_target = glob.glob(os.path.join(raw_parquet_path, target_class, str(target_year), "*.parquet"))
                 files_source = glob.glob(os.path.join(raw_parquet_path, source_class, str(source_year), "*.parquet"))
 
+            print(f"{target_class}: {target_year} to {source_class}: {source_year}")
             files_target = get_files_by_classification_in_year(files_target, target_class)
             files_source = get_files_by_classification_in_year(files_source, source_class)
             comtrade_dict = {target_year: files_target, source_year: files_source}
             reporters = extract_reporters_with_timely_classification_update(comtrade_dict)
             groups = pd.read_csv(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/concordance_groups/from_{source_class}_to_{target_class}.csv")
-            print(f"size before dropping nan {groups.shape}")
             if not groups[((groups['code.source'].isna()) | (groups['code.target'].isna()))].empty:
                 raise ValueError(f"check the concordance group file for {source_class} to {target_class} \n {groups[((groups['code.source'].isna()) | (groups['code.target'].isna()))]}")
-            print(f"size after dropping nan {groups.shape}")
             groups = groups.astype({'code.source':int, 'code.target':int}).astype({'code.source': str, 'code.target': str})
             print(f"There are {len(reporters)} reporters who switched timely from {target_class} to {source_class}")
-            # from list of reporters prepare to organize data for Matlab
 
             # need reporting importer
             print(f"data for {target_class}/{target_class}_{target_year}")
@@ -99,7 +95,12 @@ class MatrixBuilder():
             target_df = filter_df_for_reporters(target_class, target_df, reporters)
             source_df = filter_df_for_reporters(source_class, source_df, reporters)
 
-            matched_groups, groups = clean_groups(groups, source_class, target_class)
+            # extract 1:N, N:1 , N:N relationships 
+            _, groups = clean_groups(groups, source_class, target_class)
+            if 1 in groups.groupby("group.id").agg({"group.id":"count"})['group.id'].unique():
+                raise ValueError(f"grouping of one product is invalid.")
+            if "1:1" in groups.Relationship.unique():
+                raise ValueError(f"grouping of one to one relationship, is invalid.")
 
             target_dfs = country_by_prod_trade(target_df, groups, "target", target_class)
             source_dfs = country_by_prod_trade(source_df, groups, "source", source_class)
@@ -112,7 +113,6 @@ class MatrixBuilder():
             generate_dataframes(source_dfs, "source.trade", source_year, target_year)
             generate_dataframes(group_dfs, "conversion", source_year, target_year)
 
-            # FUNCTIONS to run the above code
 
 def generate_dataframes(dfs, table, source_year, target_year):
         # generate data frames 

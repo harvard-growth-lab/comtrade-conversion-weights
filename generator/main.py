@@ -1,6 +1,25 @@
 from src.python_objects.build_input_matrices import MatrixBuilder
-from src.python_objects.prep_for_pipeline import PipelineWeightPrep
+from src.python_objects.prep_for_pipeline import MatlabProgramRunner, GroupWeights
+from src.python_objects.combine_concordances import CombineConcordances
 import os
+import argparse
+from tests.test import test_dimensions
+
+# parse to set which sections to run
+# parser = argparse.ArgumentParser()
+# parser.add_argument("--sections", type=str, 
+#                     default="all", 
+#                     help="""Specify which sections to run (comma-separated numbers or 'all'). Available sections:
+# 1: Combine concordances - Concatenates concordance tables into main file
+# 2: "NOT IMPLEMENTED": Run R script to create product groups (must be run separately)
+# 3: Build matrices - Constructs source classification, target classification, and concordance matrices
+# 4: Run optimization - Validates matrices and runs MATLAB optimization
+# 5: Group weights - Groups weights by start and end year pairs
+# Example: --sections 1,3,5 to run only sections 1, 3, and 5""")
+# args = parser.parse_args()
+# sections = [int(section) for section in args.sections.split(",")]
+
+
 CONVERSION_PAIRS = [
          # Backward HS conversions
         {
@@ -153,34 +172,48 @@ CONVERSION_PAIRS = [
         }
     ]
 
+def run(sections=[1,2,3,4,5]):
+    
+    if 1 in sections:
+        # combine concordances
+        CombineConcordances().concatentate_concordance_to_main()
 
-def run():
-    # Combined data structure for all conversion pairs
+    if 2 in sections:
+        raise NotImplementedError("Run create_product_groups.R from R script")
+        # call create_product_groups.R
 
-    # Filter enabled pairs for matrix building
+    # Filter enabled pairs
     weight_tables = [
         (pair['direction'], pair['from_class'], pair['to_class'])
         for pair in CONVERSION_PAIRS
         if pair['enabled']
     ]
 
-    # Filter enabled pairs for pipeline preparation
     conversion_years = [
         (pair['from_class'], pair['from_year'], pair['to_class'], pair['to_year'])
         for pair in CONVERSION_PAIRS
         if pair['enabled']
     ]
 
-    # Initialize and run matrix builder
-    # matrix_builder = MatrixBuilder(weight_tables)
-    # matrix_builder.run()
+    if 3 in sections:
+        # build source classification, target classification, and concordance matrices
+        matrix_builder = MatrixBuilder(weight_tables)
+        matrix_builder.build()
 
-    # Initialize and run pipeline weight preparation
-    pipeline_weight_prep = PipelineWeightPrep(conversion_years)
-    pipeline_weight_prep.write_matlab_params()
-    # run matlab script
-    pipeline_weight_prep.run_matlab_optimization()
-    pipeline_weight_prep.run()
+    if 4 in sections:
+        # confirm complete matrices before running matlab optimization
+        failed_tests = test_dimensions()
+        if failed_tests:
+            raise ValueError(f"Failed tests: {failed_tests}")
+
+        matlab_runner = MatlabProgramRunner(conversion_years)
+        matlab_runner.write_matlab_params()
+        matlab_runner.run_matlab_optimization()
+
+    if 5 in sections:
+        # group weights by start and end year pairs
+        grouper =  GroupWeights(conversion_years)
+        grouper.run()
 
 
 

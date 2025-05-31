@@ -18,9 +18,11 @@ class CombineConcordances():
     # non_concorded_product_file = "data/static/product_missing_concordance.csv"
 
 
-    RELEASE_YEARS = {"SITC1" : 1962, "SITC2": 1976, "SITC3": 1988, 
+    RELEASE_YEARS = {
+        "SITC1" : 1962, "SITC2": 1976, "SITC3": 1988, 
                      "H0": 1992, "H1": 1996, "H2": 2002, 
-                     "H3": 2007, "H4": 2012, "H5": 2017, "H6": 2022}
+                     "H3": 2007, "H4": 2012, "H5": 2017, "H6": 2022
+                     }
 
 
     def __init__(self):
@@ -63,7 +65,8 @@ class CombineConcordances():
             df['code.after'] = df['code.after'].apply(lambda x: x[:-1] if len(x) == 5 else x)
             df = self.handle_no_concordances(df, non_concorded_df)
             
-            #df = df.drop_duplicates(subset=["code.after", "code.before", "adjustment"])
+            df = df.drop_duplicates(subset=["code.after", "code.before", "adjustment"])
+            df = self.handle_special_cases(df)
             df = self.add_relationship_column(df)
             dfs.append(df)
 
@@ -71,7 +74,6 @@ class CombineConcordances():
         consolidated_df = consolidated_df[~consolidated_df['code.before'].isin(["I", "II"])]
         consolidated_df = consolidated_df[~((consolidated_df['code.before']=='nan') & (consolidated_df['code.after']=='nan'))]
         consolidated_df = consolidated_df[~((consolidated_df['code.before'].isna()) | (consolidated_df['code.after'].isna()))]
-
         consolidated_df.to_csv(f"data/output/consolidated_concordance/consolidated_comtrade_concordances.csv", index=False)
 
 
@@ -222,6 +224,9 @@ class CombineConcordances():
         products = products[products['id'].str.isdigit()]
         missing_products_df = products[~products['id'].str[:detailed_product_level].isin(concordance[col].str[:detailed_product_level].unique().tolist())]
 
+        # handle special cases
+        # missing_products_df = self.handle_special_cases(missing_products_df, adjustment_period)
+
         new_columns = {
             'adjustment': adjustment_period,
             'missing_classification_type': classification_type,
@@ -231,7 +236,17 @@ class CombineConcordances():
         missing_products_df = missing_products_df.assign(**new_columns)
         return missing_products_df[['adjustment','id','text','missing_classification_type', 'missing_year', 'missing_classification']]
 
-
+    # def handle_special_cases(self, missing_products_df, adjustment_period):
+    #     """
+    #     Handle special cases where the product code is not in the concordance table
+    #     """
+    #     # trade not reported
+    #     skip_products = []
+    #     if adjustment_period == "1992 to 1988":
+    #         skip_products = ["999999", "9999AA"]
+    #     elif adjustment_period == "2002 to 1996":
+    #         skip_products = ["2710"]
+    #     return missing_products_df[~missing_products_df['id'].isin(skip_products)]
 
     def handle_no_concordances(self, concordance, non_concorded_df):
         """
@@ -341,8 +356,36 @@ class CombineConcordances():
                         'adjustment': adjustment_period
                     })
         if concorded_products:
-            new_rows_df = pd.DataFrame(concorded_products)
-            new_df =  pd.concat([concordance, new_rows_df], ignore_index=True)
+            newly_concorded_products = pd.DataFrame(concorded_products)
+            newly_concorded_products.to_csv(f"data/output/consolidated_concordance/non_concorded_products_matched.csv", index=False, mode='a')
+
+            new_df =  pd.concat([concordance, newly_concorded_products], ignore_index=True)
             new_df.drop_duplicates(subset=["code.before", "code.after", "adjustment"], inplace=True)
             return new_df
         return concordance
+    
+
+    def handle_special_cases(self, df):
+        """
+        Handle special cases where the product code is not in the concordance table
+        """
+        special_cases = {
+            "1992 to 1988":('code.before', ["9999"]),
+            "1996 to 1992": ('code.before', ["380993"]),
+            "2002 to 1996": ('code.before', ["271091", "271099"]),
+            "2002 to 1996": ('code.after', ['271091', '271099']),
+            "2002 to 1996": ('code.before', ['271096','271029','271091',
+                                            '271022','271094','271095',
+                                            '271012','271015','271025',
+                                            '271093','271099','271027',
+                                            '271016','271026','271021',
+                                            '271014','271013']),
+        }
+
+        for adjustment_period, (code_type, codes) in special_cases.items():
+            if adjustment_period in df.adjustment.unique():
+                try:
+                    df = df[~df[code_type].isin(codes)]
+                except:
+                    print(f"Error dropping {codes} for {adjustment_period}")
+        return df

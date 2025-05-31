@@ -18,7 +18,7 @@ def test_dimensions():
     errors = 0
     
     # Results storage
-    results = []
+    results = {}
     
     for start_year, end_year, group in sorted(combinations):
         try:
@@ -40,27 +40,32 @@ def test_dimensions():
             # Test conditions
             con_cols_match = con.shape[1] == target.shape[1]
             con_rows_match = con.shape[0] + 1 == source.shape[1]
+
+            status = 'PASS' if (con_cols_match and con_rows_match) else 'FAIL'
+            if status == 'FAIL':
+                missing_target_codes = []
+                missing_source_codes = []
+                if not con_cols_match:
+                    missing_target_codes = list(set(con.columns[1:]) - set(target.columns[1:]))
+                elif not con_rows_match:
+                    missing_source_codes = list(set(con.columns[1:]) - set(source.columns[1:]))
             
-            # Store results
-            result = {
-                'start_year': start_year,
-                'end_year': end_year,
-                'group': group,
-                'con_shape': con.shape,
-                'source_shape': source.shape,
-                'target_shape': target.shape,
-                'columns_match': con_cols_match,
-                'rows_match': con_rows_match,
-                'status': 'PASS' if (con_cols_match and con_rows_match) else 'FAIL'
-            }
+                # Store results
+                results[group] = {
+                    'start_year': start_year,
+                    'end_year': end_year,
+                    'con_shape': con.shape,
+                    'source_shape': source.shape,
+                    'target_shape': target.shape,
+                    'columns_match': con_cols_match,
+                    'rows_match': con_rows_match,
+                    'missing_target_codes': missing_target_codes,
+                    'missing_source_codes': missing_source_codes
+                }
             
-            results.append(result)
-            
-            if con_cols_match and con_rows_match:
-                passed += 1
-            else:
                 failed += 1
-                
+            else:
+                passed += 1
         except Exception as e:
             errors += 1
             print(f"Error processing years {start_year}-{end_year}, group {group}: {e}")
@@ -72,11 +77,10 @@ def test_dimensions():
     # Print detailed failures
     if failed > 0:
         print("\nFailed Tests:")
-        for result in results:
-            if result['status'] == 'FAIL':
-                print(f"Years {result['start_year']}-{result['end_year']}, Group {result['group']}:")
-                print(f"  con shape: {result['con_shape']}, source shape: {result['source_shape']}, target shape: {result['target_shape']}")
-                print(f"  columns match: {result['columns_match']}, rows match: {result['rows_match']}")
+        for group, result in results.items():
+            print(f"Years {result['start_year']}-{result['end_year']}, Group {group}:")
+            print(f"  con shape: {result['con_shape']}, source shape: {result['source_shape']}, target shape: {result['target_shape']}")
+            print(f"  columns match: {result['columns_match']}, rows match: {result['rows_match']}")
     
     return results
 
