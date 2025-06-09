@@ -96,18 +96,21 @@ class MatrixBuilder():
             source_df = filter_df_for_reporters(source_class, source_df, reporters)
 
             # extract 1:N, N:1 , N:N relationships 
-            _, groups = clean_groups(groups, source_class, target_class)
-            if 1 in groups.groupby("group.id").agg({"group.id":"count"})['group.id'].unique():
+            non_one_to_one_groups = groups[groups.Relationship.isin(["n:1","n:n","1:n"])]
+            non_one_to_one_groups = clean_groups(non_one_to_one_groups, source_class, target_class)
+            if non_one_to_one_groups[non_one_to_one_groups['group.id'].isna()]:
+                raise ValueError(f"na as group id for {source_class} to {target_class}")
+            if 1 in non_one_to_one_groups.groupby("group.id").agg({"group.id":"count"})['group.id'].unique():
                 raise ValueError(f"grouping of one product is invalid.")
-            if "1:1" in groups.Relationship.unique():
+            if "1:1" in non_one_to_one_groups.Relationship.unique():
                 raise ValueError(f"grouping of one to one relationship, is invalid.")
 
-            target_dfs = country_by_prod_trade(target_df, groups, "target", target_class)
-            source_dfs = country_by_prod_trade(source_df, groups, "source", source_class)
+            target_dfs = country_by_prod_trade(target_df, non_one_to_one_groups, "target", target_class)
+            source_dfs = country_by_prod_trade(source_df, non_one_to_one_groups, "source", source_class)
 
-            target_dfs, source_dfs = align_reporter_indices(groups, target_dfs, source_dfs)
+            target_dfs, source_dfs = align_reporter_indices(non_one_to_one_groups, target_dfs, source_dfs)
 
-            group_dfs = conversion_matrix(groups)
+            group_dfs = conversion_matrix(non_one_to_one_groups)
 
             generate_dataframes(target_dfs, "target.trade", source_year, target_year)
             generate_dataframes(source_dfs, "source.trade", source_year, target_year)
@@ -291,11 +294,9 @@ def determine_relationship(concordance_df):
     """
     df = concordance_df.copy()
     
-    # Create full mappings between codes
     before_to_after_dict = {}
     after_to_before_dict = {}
     
-    # Build the mapping dictionaries
     for _, row in df.iterrows():
         before_code = row['code.before']
         after_code = row['code.after']
@@ -308,7 +309,6 @@ def determine_relationship(concordance_df):
             after_to_before_dict[after_code] = set()
         after_to_before_dict[after_code].add(before_code)
         
-    # Determine relationships for each pair
     for i, row in df.iterrows():
         before_code = row['code.before']
         after_code = row['code.after']

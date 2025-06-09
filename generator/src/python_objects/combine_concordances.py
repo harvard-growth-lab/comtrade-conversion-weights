@@ -324,7 +324,6 @@ class CombineConcordances():
             )
 
             if not found:
-                # No mapping found - use the original code
                 raise ValueError(f"No mapping found for {code} in {adjustment_period}")
             else:
                 # Determine the expected product code length

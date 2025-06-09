@@ -2,7 +2,7 @@ import pandas as pd
 import glob
 import re
 from collections import defaultdict
-
+from pathlib import Path
 
 def test_dimensions():
     """
@@ -102,6 +102,25 @@ def extract_year_group_combinations(filenames):
             combinations.add((start_year, end_year, group_num))
     
     return combinations
+
+
+def validate_weights_sum_to_one():
+    weight_files = Path("/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/output/grouped_weights")
+    for file in weight_files.iterdir():
+        print(file.name)
+        try:
+            df = pd.read_csv(file)
+        except:
+            continue
+        source_col = file.name.split(":")[0][-2:]
+        print(source_col)
+        df = df.groupby(source_col).agg({'weight':"sum"})
+        df.weight = df.weight.astype(int) 
+        weights = df.weight.unique()
+        print(weights)
+        if len(weights) > 1:
+            print(f"review {file}")
+
 
 
 if __name__ == "__main__":

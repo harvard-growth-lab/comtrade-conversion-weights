@@ -6,18 +6,18 @@ import argparse
 from tests.test import test_dimensions
 
 # parse to set which sections to run
-# parser = argparse.ArgumentParser()
-# parser.add_argument("--sections", type=str, 
-#                     default="all", 
-#                     help="""Specify which sections to run (comma-separated numbers or 'all'). Available sections:
-# 1: Combine concordances - Concatenates concordance tables into main file
-# 2: "NOT IMPLEMENTED": Run R script to create product groups (must be run separately)
-# 3: Build matrices - Constructs source classification, target classification, and concordance matrices
-# 4: Run optimization - Validates matrices and runs MATLAB optimization
-# 5: Group weights - Groups weights by start and end year pairs
-# Example: --sections 1,3,5 to run only sections 1, 3, and 5""")
-# args = parser.parse_args()
-# sections = [int(section) for section in args.sections.split(",")]
+parser = argparse.ArgumentParser()
+parser.add_argument("--sections", type=str, 
+                    default="all", 
+                    help="""Specify which sections to run (comma-separated numbers or 'all'). Available sections:
+        1: Combine concordances - Concatenates concordance tables into main file
+        2: "NOT IMPLEMENTED": Run R script to create product groups (must be run separately)
+        3: Build matrices - Constructs source classification, target classification, and concordance matrices
+        4: Run optimization - Validates matrices and runs MATLAB optimization
+        5: Group weights - Groups weights by start and end year pairs
+        Example: --sections 1,3,5 to run only sections 1, 3, and 5""")
+args = parser.parse_args()
+sections = [section for section in args.sections.split(",")]
 
 
 CONVERSION_PAIRS = [
@@ -174,11 +174,11 @@ CONVERSION_PAIRS = [
 
 def run(sections=[1,2,3,4,5]):
     
-    if 1 in sections:
+    if '1' in sections:
         # combine concordances
         CombineConcordances().concatentate_concordance_to_main()
 
-    if 2 in sections:
+    if '2' in sections:
         raise NotImplementedError("Run create_product_groups.R from R script")
         # call create_product_groups.R
 
@@ -195,12 +195,12 @@ def run(sections=[1,2,3,4,5]):
         if pair['enabled']
     ]
 
-    if 3 in sections:
+    if '3' in sections:
         # build source classification, target classification, and concordance matrices
         matrix_builder = MatrixBuilder(weight_tables)
         matrix_builder.build()
 
-    if 4 in sections:
+    if '4' in sections:
         # confirm complete matrices before running matlab optimization
         failed_tests = test_dimensions()
         if failed_tests:
@@ -210,12 +210,10 @@ def run(sections=[1,2,3,4,5]):
         matlab_runner.write_matlab_params()
         matlab_runner.run_matlab_optimization()
 
-    if 5 in sections:
-        # group weights by start and end year pairs
+    if '5' in sections:
+        print("Grouping weights by start and end year pairs")
         grouper =  GroupWeights(conversion_years)
         grouper.run()
 
-
-
 if __name__ == "__main__":
-    run()
+    run(sections=sections)
