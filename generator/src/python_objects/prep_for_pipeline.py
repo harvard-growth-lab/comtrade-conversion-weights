@@ -97,8 +97,11 @@ class GroupWeights():
 
     def run(self):
         for source_class, start_year, target_class, end_year in self.conversion_years:
+            print(f"source class {source_class} and target class {target_class}")
             combined_result = pd.DataFrame()
             results = glob.glob(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/conversion_weights/conversion.weights.start.{start_year}.end.{end_year}.group.*.csv")
+            if not results:
+                raise ValueError("Missing conversion weights data, need to run step 4")
             for file in results:
                 match = re.search(r'group\.(\d+)\.csv$', str(file))
                 if not match:
@@ -129,25 +132,26 @@ class GroupWeights():
                 weight_long = weight_df.reset_index().melt(
                     id_vars='code.source',var_name='code.target',value_name='weight'
                 ).astype({'code.source': str, 'code.target':str, 'weight': float})
+                
 
                 weight_long['group_id'] = gid
                 combined_result = pd.concat([combined_result, weight_long])
                 # except:
                 #     print("failed")
-                    
             groups = pd.read_csv(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/concordance_groups/from_{source_class}_to_{target_class}.csv", 
                                 dtype={source_class: str, target_class: str})
-            one_to_one_groups = groups[groups.Relationship.isin(["1:1"])]
-            one_to_one_groups = clean_groups(one_to_one_groups, source_class, target_class)
-            import pdb; pdb.set_trace()
+            # add back products that did not require optimization and thus never assigned a group id
+            non_grouped_products = groups[groups['group.id'].isna()]
+            non_grouped_products = clean_groups(non_grouped_products, source_class, target_class)
 
-            one_to_one_groups = one_to_one_groups[['group.id','code.source','code.target']]
-            one_to_one_groups['weight'] = 1
-            one_to_one_groups = one_to_one_groups.rename(columns={"group.id":"group_id"})
-            combined_result = pd.concat([combined_result, one_to_one_groups])
+            non_grouped_products = non_grouped_products[['group.id','code.source','code.target']]
+            non_grouped_products['weight'] = 1
+            non_grouped_products = non_grouped_products.rename(columns={"group.id":"group_id"})
+            combined_result = pd.concat([combined_result, non_grouped_products])
             
             combined_result[['code.target','code.source']] = combined_result[['code.target','code.source']].astype(str)
             combined_result = combined_result.rename(columns={"code.target":target_class,"code.source":source_class})
                     
             print(f"saving {source_class}:{target_class}.csv")
+            combined_result = combined_result[combined_result.weight!=0]
             combined_result.to_csv(f"/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/output/grouped_weights/grouped_{source_class}:{target_class}.csv", index=False)       

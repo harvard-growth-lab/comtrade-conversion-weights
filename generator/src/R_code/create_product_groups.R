@@ -2,6 +2,17 @@
 ## Function to create Product Groups (i.e., identify product directly or indirectly linked by UN correspondence tables for a given HS vintage)
 ################################################################################
 
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("readxl")) install.packages("readxl")
+if (!require("stringr")) install.packages("stringr")
+if (!require("CVXR")) install.packages("CVXR")
+if (!require("openxlsx")) install.packages("openxlsx")
+if (!require("Hmisc")) install.packages("Hmisc")
+if (!require("expss")) install.packages("expss")
+if (!require("reshape2")) install.packages("reshape2")
+if (!require("R.matlab")) install.packages("R.matlab")
+if (!require("matlabr")) install.packages("matlabr")
+if (!require("splitstackshape")) install.packages("splitstackshape")
 
 
 library(ggplot2)
@@ -18,27 +29,10 @@ library(splitstackshape)
 
 rm(list = ls())
 
-# Function to parse command line arguments
-parse_args <- function() {
-  args <- commandArgs(trailingOnly = TRUE)
-  if (length(args) < 2) {
-    stop("Two arguments required: 1) CSV file path containing the iterations dataframe, 2) working directory path")
-  }
-  iterations_file <- args[1]
-  working_dir <- args[2]
-  
-  if (!file.exists(iterations_file)) {
-    stop(sprintf("File %s does not exist", iterations_file))
-  }
-  if (!dir.exists(working_dir)) {
-    stop(sprintf("Directory %s does not exist", working_dir))
-  }
-  
+
   # Set working directory
-  setwd("/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator")
+setwd("/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator")
   
-  return(read.csv(iterations_file))
-}
 
 # Get iterations dataframe from command line
 iterations_df <- parse_args()

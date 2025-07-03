@@ -8,7 +8,6 @@ def clean_groups(groups, source_class, target_class):
         groups = groups.drop(columns='Unnamed: 0')
     except:
         pass
-    groups['group.id'] = groups['group.id'].astype(int)
     groups['code.source'] = groups['code.source'].astype(str)
     groups['code.target'] = groups['code.target'].astype(str)
 
@@ -19,10 +18,15 @@ def clean_groups(groups, source_class, target_class):
     groups.loc[groups['code.target'].str.len() < target_detailed_product_level, 'code.target'] = groups['code.target'].str.zfill(target_detailed_product_level)
     return groups
 
-
 def get_detailed_product_level(classification):
     if classification.startswith("H"):
         return 6
     elif classification.startswith("S"):
         return 4
+    
+
+def cleanup_files_from_dir(files):
+    for file in files:
+        if file.is_file():
+            file.unlink()
 

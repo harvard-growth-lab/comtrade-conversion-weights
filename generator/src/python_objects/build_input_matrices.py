@@ -31,7 +31,7 @@ class MatrixBuilder():
         ready for matlab code to generate conversion weights
         """
         raw_parquet_path = "/n/hausmann_lab/lab/atlas/data/as_reported/raw_parquet/"
-        aggregated_by_year_path = "/n/hausmann_lab/lab/atlas/data/as_reported/aggregated_by_year/parquet/"
+        reporters_by_year_path = "/n/hausmann_lab/lab/atlas/data/as_reported/aggregated_by_year_not_converted/parquet/"
         for direction, source_class, target_class in self.weight_tables:
             print(f"beginning conversion for {source_class} to {target_class}")
 
@@ -85,8 +85,8 @@ class MatrixBuilder():
                 source_df = generate_year_avgs(source_class, source_year, avg_range)
 
             else: 
-                target_path = os.path.join(aggregated_by_year_path, target_class, f"{target_class}_{target_year}.parquet")
-                source_path = os.path.join(aggregated_by_year_path, source_class, f"{source_class}_{source_year}.parquet")
+                target_path = os.path.join(reporters_by_year_path, target_class, f"{target_class}_{target_year}.parquet")
+                source_path = os.path.join(reporters_by_year_path, source_class, f"{source_class}_{source_year}.parquet")
                 # CPY for reporting imports
                 target_df = pd.read_parquet(target_path)
                 source_df = pd.read_parquet(source_path)
@@ -95,22 +95,22 @@ class MatrixBuilder():
             target_df = filter_df_for_reporters(target_class, target_df, reporters)
             source_df = filter_df_for_reporters(source_class, source_df, reporters)
 
-            # extract 1:N, N:1 , N:N relationships 
-            non_one_to_one_groups = groups[groups.Relationship.isin(["n:1","n:n","1:n"])]
-            non_one_to_one_groups = clean_groups(non_one_to_one_groups, source_class, target_class)
-            if non_one_to_one_groups[non_one_to_one_groups['group.id'].isna()]:
-                raise ValueError(f"na as group id for {source_class} to {target_class}")
-            if 1 in non_one_to_one_groups.groupby("group.id").agg({"group.id":"count"})['group.id'].unique():
+            # extract products that are not grouped all 1:1 and some N:1 relationships
+            grouped_products = groups[groups['group.id'].notna()]
+            grouped_products['group.id'] = grouped_products['group.id'].astype(int)
+
+            grouped_products = clean_groups(grouped_products, source_class, target_class)
+            if 1 in grouped_products.groupby("group.id").agg({"group.id":"count"})['group.id'].unique():
                 raise ValueError(f"grouping of one product is invalid.")
-            if "1:1" in non_one_to_one_groups.Relationship.unique():
+            if "1:1" in grouped_products.Relationship.unique():
                 raise ValueError(f"grouping of one to one relationship, is invalid.")
 
-            target_dfs = country_by_prod_trade(target_df, non_one_to_one_groups, "target", target_class)
-            source_dfs = country_by_prod_trade(source_df, non_one_to_one_groups, "source", source_class)
+            target_dfs = country_by_prod_trade(target_df, grouped_products, "target", target_class)
+            source_dfs = country_by_prod_trade(source_df, grouped_products, "source", source_class)
 
-            target_dfs, source_dfs = align_reporter_indices(non_one_to_one_groups, target_dfs, source_dfs)
+            target_dfs, source_dfs = align_reporter_indices(grouped_products, target_dfs, source_dfs)
 
-            group_dfs = conversion_matrix(non_one_to_one_groups)
+            group_dfs = conversion_matrix(grouped_products)
 
             generate_dataframes(target_dfs, "target.trade", source_year, target_year)
             generate_dataframes(source_dfs, "source.trade", source_year, target_year)
@@ -410,4 +410,31 @@ class ComtradeFiles:
 
         
                  
+
+
+if __name__ == "__main__":
+    # Define the weight tables to process
+    # Each tuple contains (direction, source_class, target_class)
+    # direction can be "forward" or "backward"
+    weight_tables = [
+        ("forward", "H0", "H1"),  # H0 to H1
+        ("forward", "H1", "H2"),  # H1 to H2
+        ("forward", "H2", "H3"),  # H2 to H3
+        ("forward", "H3", "H4"),  # H3 to H4
+        ("forward", "H4", "H5"),  # H4 to H5
+        ("forward", "H5", "H6"),  # H5 to H6
+        ("backward", "H1", "H0"), # H1 to H0
+        ("backward", "H2", "H1"), # H2 to H1
+        ("backward", "H3", "H2"), # H3 to H2
+        ("backward", "H4", "H3"), # H4 to H3
+        ("backward", "H5", "H4"), # H5 to H4
+        ("backward", "H6", "H5"), # H6 to H5
+        ("forward", "S1", "S2"),  # S1 to S2
+        ("forward", "S2", "S3"),  # S2 to S3
+        ("backward", "S2", "S1"), # S2 to S1
+        ("backward", "S3", "S2"), # S3 to S2
+    ]
+    
+    # Initialize and run the matrix builder
+    builder = MatrixBuilder(weight_tables)
 

@@ -67,7 +67,7 @@ class CombineConcordances():
             
             df = df.drop_duplicates(subset=["code.after", "code.before", "adjustment"])
             df = self.handle_special_cases(df)
-            df = self.add_relationship_column(df)
+            df = self.recalculate_relationship_column(df)
             dfs.append(df)
 
         consolidated_df = pd.concat(dfs)
@@ -90,10 +90,40 @@ class CombineConcordances():
             classifications = [m for m in matches if m not in ["to", "Conversion", "and", "Correlation", "Tables", "xls"]]
             return classifications[0], classifications[1]
     
-    def add_relationship_column(self, df):
+    def recalculate_relationship_column(self, df):
         """
-        Add a relationship column based on sparse matrix analysis 
-        grouped by adjustment period
+        Analyze and classify relationships between product codes using Conditional Independence Filter (CIF) analysis.
+        
+        This method implements the first step of CIF calculations by analyzing the relationships between
+        product codes in different classification systems. It creates a sparse matrix representation of
+        product code mappings and classifies relationships into four categories:
+        
+        - '1:1': One-to-one mapping between source and target codes
+        - 'n:1': Many-to-one mapping (multiple source codes map to one target code)
+        - '1:n': One-to-many mapping (one source code maps to multiple target codes)
+        - 'n:n': Many-to-many mapping (multiple source codes map to multiple target codes)
+        
+        The analysis is performed separately for each adjustment period to ensure temporal consistency.
+        
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            Input dataframe containing columns:
+            - code.after: Target classification codes
+            - code.before: Source classification codes
+            - adjustment: Period of classification adjustment
+            
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame with added 'Relationship' column indicating the type of mapping
+            between source and target codes for each pair.
+            
+        Notes
+        -----
+        This is a key component of the CIF methodology that helps identify which product
+        code pairs require optimization of conversion weights. Only non-1:1 relationships
+        are considered for subsequent optimization steps.
         """
         result_df = df.copy()
         result_df['Relationship'] = ''
@@ -357,7 +387,6 @@ class CombineConcordances():
         if concorded_products:
             newly_concorded_products = pd.DataFrame(concorded_products)
             newly_concorded_products.to_csv(f"data/output/consolidated_concordance/non_concorded_products_matched.csv", index=False, mode='a')
-
             new_df =  pd.concat([concordance, newly_concorded_products], ignore_index=True)
             new_df.drop_duplicates(subset=["code.before", "code.after", "adjustment"], inplace=True)
             return new_df
