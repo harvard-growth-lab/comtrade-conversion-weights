@@ -6,12 +6,12 @@ authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 comtradeapicall = "^1.2.1"
 pandas = "^2.2.3"
 urllib3 = "^2.4.0"
 fastparquet = "^2024.11.0"
-ipython = "^9.2.0"
+ipython = "^8.0.0"
 xlrd = "^2.0.1"
 openpyxl = "^3.1.5"
 scipy = "^1.15.3"
