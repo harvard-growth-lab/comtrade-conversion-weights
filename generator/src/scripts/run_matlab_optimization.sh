@@ -7,10 +7,10 @@
 #SBATCH -e matlab_job_%j.err
 
 # Load MATLAB module
-module load matlab/R2021a-fasrc01
+# module load matlab/R2021a-fasrc01
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-LOGS_DIR="${SCRIPT_DIR}/../logs"
+LOGS_DIR="${SCRIPT_DIR}/../../logs/matlab_optimization"
 mkdir -p "$LOGS_DIR"
 
 LOG_FILE="${LOGS_DIR}/optimization_run_$(date +%Y%m%d_%H%M%S).log"
@@ -19,10 +19,9 @@ log_message() {
 }
 
 # Change to working directory
-MATLAB_DIR="$SCRIPT_DIR/../src/matlab"
-cd "$MATLAB_DIR"
+cd "$SCRIPT_DIR"
 
-MATLAB_PARAMS_FILE="$SCRIPT_DIR/../data/temp/matlab_script_params.txt"
+MATLAB_PARAMS_FILE="$SCRIPT_DIR/../../data/temp/matlab_script_params.txt"
 source "$MATLAB_PARAMS_FILE"
 
 # Convert the space-separated strings into arrays

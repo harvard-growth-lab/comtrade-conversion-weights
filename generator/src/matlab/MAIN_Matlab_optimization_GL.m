@@ -9,11 +9,22 @@ for group = groups
     disp(' ')
     disp(strcat('Running group:', num2str(group)))
 
-    raw=readcell(strcat('/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/matrices/conversion.matrix.start.',num2str(start_year),'.end.',num2str(end_year),'.group.',num2str(group),'.csv'));
+    // Get the current working directory and build relative path
+    current_dir = pwd;
+    data_dir = fullfile(current_dir, 'data', 'matrices');
+
+    filename = sprintf('conversion.matrix.start.%d.end.%d.group.%d.csv', start_year, end_year, group);
+    filepath = fullfile(data_dir, filename);
+    raw = readcell(filepath);
+
+    // raw=readcell(strcat('/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/matrices/conversion.matrix.start.',num2str(start_year),'.end.',num2str(end_year),'.group.',num2str(group),'.csv'));
     raw=raw(2:end, 2:end);raw=string(raw);
     conversion_mat=raw=="True";
-    
-    raw=readcell(strcat('/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/matrices/source.trade.matrix.start.',num2str(start_year),'.end.',num2str(end_year),'.group.',num2str(group),'.csv'));
+
+    filename = sprintf('source.trade.matrix.start.%d.end.%d.group.%d.csv', start_year, end_year, group);
+    filepath = fullfile(data_dir, filename);
+    raw = readcell(filepath);
+
     raw=raw(2:end, 2:end);
     old_trade_mat = zeros(size(raw));
     for r = 1:size(raw,1)
@@ -35,7 +46,12 @@ for group = groups
     end
     old_trade_mat=old_trade_mat./sum(old_trade_mat(:));%normalize group trade in a year
 
-    raw=readcell(strcat('/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/matrices/target.trade.matrix.start.',num2str(start_year),'.end.',num2str(end_year),'.group.',num2str(group),'.csv'));
+
+    filename = sprintf('target.trade.matrix.start.%d.end.%d.group.%d.csv', start_year, end_year, group);
+    filepath = fullfile(data_dir, filename);
+    raw = readcell(filepath);
+
+    // raw=readcell(strcat('/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/matrices/target.trade.matrix.start.',num2str(start_year),'.end.',num2str(end_year),'.group.',num2str(group),'.csv'));
     raw=raw(2:end, 2:end);
     new_trade_mat = zeros(size(raw));
     for r = 1:size(raw,1)
@@ -202,6 +218,15 @@ for group = groups
     disp('Time used for optimization (in seconds):')
     disp(time_hes_con)
 
-    dlmwrite(strcat('/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/conversion_weights/conversion.weights.start.',num2str(start_year),'.end.',num2str(end_year),'.group.',num2str(group),'.csv'),btildecon,'delimiter',',', 'precision', 20);
+    weights_dir = fullfile(pwd, 'data', 'conversion_weights');
+    if ~exist(weights_dir, 'dir')
+        mkdir(weights_dir);
+    end
+
+    filename = sprintf('conversion.weights.start.%d.end.%d.group.%d.csv', start_year, end_year, group);
+    filepath = fullfile(weights_dir, filename);
+    dlmwrite(filepath, btildecon, 'delimiter', ',', 'precision', 20);
+
+    // dlmwrite(strcat('/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/conversion_weights/conversion.weights.start.',num2str(start_year),'.end.',num2str(end_year),'.group.',num2str(group),'.csv'),btildecon,'delimiter',',', 'precision', 20);
     
 end

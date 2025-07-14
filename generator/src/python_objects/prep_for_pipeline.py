@@ -80,7 +80,7 @@ class MatlabProgramRunner(Base):
             )
 
             self.logger.info("MATLAB optimization completed successfully")
-            self.logger.info("Output:", result.stdout)
+            self.logger.info(f"Output: {result.stdout}")
             if result.stderr:
                 self.logger.error("Errors:", result.stderr)
 
