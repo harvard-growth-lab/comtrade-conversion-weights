@@ -19,9 +19,11 @@ log_message() {
 }
 
 # Change to working directory
-cd '/n/holystore01/LABS/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/src/matlab'
+MATLAB_DIR="$SCRIPT_DIR/../src/matlab"
+cd "$MATLAB_DIR"
 
-source /n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator/data/temp/matlab_script_params.txt
+MATLAB_PARAMS_FILE="$SCRIPT_DIR/../data/temp/matlab_script_params.txt"
+source "$MATLAB_PARAMS_FILE"
 
 # Convert the space-separated strings into arrays
 START_YEARS=($START_YEARS)

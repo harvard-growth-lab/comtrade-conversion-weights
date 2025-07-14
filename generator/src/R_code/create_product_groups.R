@@ -2,40 +2,32 @@
 ## Function to create Product Groups (i.e., identify product directly or indirectly linked by UN correspondence tables for a given HS vintage)
 ################################################################################
 
-if (!require("ggplot2")) install.packages("ggplot2")
-if (!require("readxl")) install.packages("readxl")
-if (!require("stringr")) install.packages("stringr")
-if (!require("CVXR")) install.packages("CVXR")
-if (!require("openxlsx")) install.packages("openxlsx")
-if (!require("Hmisc")) install.packages("Hmisc")
-if (!require("expss")) install.packages("expss")
-if (!require("reshape2")) install.packages("reshape2")
-if (!require("R.matlab")) install.packages("R.matlab")
-if (!require("matlabr")) install.packages("matlabr")
-if (!require("splitstackshape")) install.packages("splitstackshape")
+user_lib <- Sys.getenv("R_LIBS_USER")
+if (!dir.exists(user_lib)) {
+  dir.create(user_lib, recursive = TRUE)
+}
+.libPaths(c(user_lib, .libPaths()))
 
+install_if_missing <- function(package_name) {
+  if (!require(package_name, character.only = TRUE, quietly = TRUE)) {
+    install.packages(package_name, lib = user_lib, repos = "https://cran.rstudio.com/")
+    library(package_name, character.only = TRUE)
+  }
+}
 
-library(ggplot2)
-library(readxl)
-library(stringr)
-library(CVXR)
-library(openxlsx)
-library(Hmisc)
-library(expss)
-library(reshape2)
-library("R.matlab")
-library("matlabr")
-library(splitstackshape)
+packages <- c("here", "data.table")
+
+for (pkg in packages) {
+  install_if_missing(pkg)
+}
 
 rm(list = ls())
 
-
-  # Set working directory
-setwd("/n/hausmann_lab/lab/atlas/bustos_yildirim/weights_generator/generator")
+# Set working directory
+setwd(here("generator"))
   
-
 # Get iterations dataframe from command line
-iterations_df <- parse_args()
+# iterations_df <- parse_args()
 
 ### The 'create.groups' function:
 create.groups=function(data ## Specify a two column dataframe with the code correspondences
@@ -93,12 +85,11 @@ iterations_df <- data.frame(
   to_year = c(
     1992, 1996, 2002, 2007, 2012, 2017, 1996, 2002, 2007, 2012, 2017, 2022, 1976, 1962, 1988, 1976, 1992, 1988),
   source_classification = c(
-    "H1", "H2", "H3", "H4", "H5", "H6", "H0", "H1", "H2", "H3", "H4", "H5", "S1", "S2", "H0", "S3", "S3", "S2"),
+    "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS2022", "HS1992", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "SITC1", "SITC2", "HS1992", "SITC3", "SITC3", "SITC2"),
   target_classification = c(
-    "H0", "H1", "H2", "H3", "H4", "H5", "H1", "H2", "H3", "H4", "H5", "H6", "S2", "S1", "S3", "S2", "H0", "S3"),
+    "HS1992", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS2022", "SITC2", "SITC1", "SITC3", "SITC2", "HS1992", "SITC3"),
   stringsAsFactors = FALSE
 )
-
 
 for(i in 1:nrow(iterations_df)) {
   
