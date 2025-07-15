@@ -17,9 +17,9 @@ pd.set_option("future.no_silent_downcasting", True)
 
 class MatrixBuilder(Base):
     atlas_classifications = ["HS1992", "HS2012", "SITC1", "SITC2"]
+    AVERAGE_RANGE = 3
 
     def __init__(self, conversion_weights_pair):
-        AVERAGE_RANGE = 3
 
         super().__init__(conversion_weights_pair)
         self.downloaded_comtrade_data_path = Path(
