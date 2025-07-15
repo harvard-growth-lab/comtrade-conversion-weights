@@ -40,6 +40,8 @@ class MatrixBuilder(Base):
         self.source_class_path = (
             self.downloaded_comtrade_parquet_path / self.source_class_code
         )
+        self.correlation_groups_path = self.data_path / "correlation_groups"
+        self.set_up_paths(self.correlation_groups_path)
 
     def build(self):
         """
@@ -174,9 +176,9 @@ class MatrixBuilder(Base):
         """
         Gets the correlation file for the source and target classes.
         """
-        correlation_groups_path = self.data_path / "correlation_groups"
+
         groups = pd.read_csv(
-            correlation_groups_path
+            self.correlation_groups_path
             / f"from_{self.source_class}_to_{self.target_class}.csv"
         )
         if not groups[
