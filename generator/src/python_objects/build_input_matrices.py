@@ -18,202 +18,265 @@ pd.set_option("future.no_silent_downcasting", True)
 class MatrixBuilder(Base):
     atlas_classifications = ["HS1992", "HS2012", "SITC1", "SITC2"]
 
-    def __init__(self, conversion_weights_pairs):
-        super().__init__(conversion_weights_pairs)
+    def __init__(self, conversion_weights_pair):
+        AVERAGE_RANGE = 3
+
+        super().__init__(conversion_weights_pair)
         self.downloaded_comtrade_data_path = Path(
             self.downloaded_comtrade_data_path / "as_reported"
         )
         self.downloaded_comtrade_parquet_path = (
             self.downloaded_comtrade_data_path / "raw_parquet"
         )
-        self.conversion_weights_pairs = conversion_weights_pairs
+        # set variables
+        self.conversion_weight_pair = conversion_weights_pair
+        self.source_class = conversion_weights_pair["source_class"]
+        self.target_class = conversion_weights_pair["target_class"]
+        self.target_class_code = self.classification_translation_dict[self.target_class]
+        self.source_class_code = self.classification_translation_dict[self.source_class]
+        self.target_class_path = (
+            self.downloaded_comtrade_parquet_path / self.target_class_code
+        )
+        self.source_class_path = (
+            self.downloaded_comtrade_parquet_path / self.source_class_code
+        )
 
     def build(self):
         """
         generates conversion and trade values matrices that is
         ready for matlab code to generate conversion weights
         """
-        for conversion_weight_pair in self.conversion_weights_pairs:
-            source_class = conversion_weight_pair["source_class"]
-            target_class = conversion_weight_pair["target_class"]
-            print(f"beginning conversion for {source_class} to {target_class}")
+        self.logger.info("building input matrices...")
 
-            if conversion_weight_pair["direction"] == "backward":
-                # H1 => H0, source 1995 & target 1996
-                source_year = self.RELEASE_YEARS[source_class]
-                target_year = source_year - 1
+        # for conversion_weight_pair in self.conversion_weights_pairs:
+
+        self.get_source_and_target_years()
+        files_target, files_source = self.get_trade_files_by_classification()
+
+        self.logger.info(
+            f"{self.target_class}: {self.target_year} to {self.source_class}: {self.source_year}"
+        )
+        files_target = self.get_files_by_classification_in_year(
+            files_target, self.target_class_code
+        )
+        files_source = self.get_files_by_classification_in_year(
+            files_source, self.source_class_code
+        )
+        comtrade_dict = {
+            self.target_year: files_target,
+            self.source_year: files_source,
+        }
+
+        reporters = self.extract_reporters_with_timely_classification_update(
+            comtrade_dict
+        )
+        self.logger.info(
+            f"There are {len(reporters)} reporters who switched timely from {self.target_class} to {self.source_class}"
+        )
+
+        groups = self.get_combined_correlation_file()
+        # extract products that are not grouped all 1:1 and some N:1 relationships
+        grouped_products = self.filter_for_only_grouped_products(groups)
+
+        target_dfs = self.prep_trade_dataframes(
+            "target",
+            self.target_class,
+            self.target_year,
+            grouped_products,
+            reporters,
+        )
+        source_dfs = self.prep_trade_dataframes(
+            "source",
+            self.source_class,
+            self.source_year,
+            grouped_products,
+            reporters,
+        )
+
+        target_dfs, source_dfs = self.align_reporter_indices(
+            grouped_products, target_dfs, source_dfs
+        )
+
+        group_dfs = self.conversion_matrix(grouped_products)
+
+        self.generate_dataframes(
+            target_dfs, "target.trade", self.source_year, self.target_year
+        )
+        self.generate_dataframes(
+            source_dfs, "source.trade", self.source_year, self.target_year
+        )
+        self.generate_dataframes(
+            group_dfs, "conversion", self.source_year, self.target_year
+        )
+
+    def get_source_and_target_years(self) -> None:
+        """
+        Sets the source and target years for the conversion weight pair.
+        """
+        if self.source_class in ["HS1992", "SITC3"] and self.target_class in [
+            "HS1992",
+            "SITC3",
+        ]:
+
+            if self.source_class == "HS1992":
+                self.source_year = 1992
+                self.target_year = 1988
             else:
-                # H0 => H1, source 1995 & target 1996
-                target_year = self.RELEASE_YEARS[target_class]
-                source_year = target_year - 1
+                self.source_year = 1988
+                self.target_year = 1992
 
-            avg_range = 3
-            target_class_code = self.classification_translation_dict[target_class]
-            source_class_code = self.classification_translation_dict[source_class]
-            target_class_path = (
-                self.downloaded_comtrade_parquet_path / target_class_code
-            )
-            source_class_path = (
-                self.downloaded_comtrade_parquet_path / source_class_code
-            )
+        elif self.conversion_weight_pair["direction"] == "backward":
+            # H1 => H0, source 1995 & target 1996
+            self.source_year = self.RELEASE_YEARS[self.source_class]
+            self.target_year = self.source_year - 1
+        else:
+            # forward direction example: H0 => H1, source 1995 & target 1996
+            self.target_year = self.RELEASE_YEARS[self.target_class]
+            self.source_year = self.target_year - 1
 
-            if source_class in ["HS1992", "SITC3"] and target_class in [
-                "HS1992",
-                "SITC3",
-            ]:
+    def get_trade_files_by_classification(self) -> tuple[list, list]:
+        """
+        Gets the trade file paths by classification.
 
-                if conversion_weight_pair["source_class"] == "HS1992":
-                    source_year = 1992
-                    target_year = 1988
-                else:
-                    source_year = 1988
-                    target_year = 1992
+        SITC to HS conversions trade files are averaged over the constant AVERAGE_RANGE years
+        this is to ensure all products are captured, a requirement for the optimization code
+        """
+        if self.source_class in ["HS1992", "SITC3"] and self.target_class in [
+            "HS1992",
+            "SITC3",
+        ]:
 
-                files_target = []
-                files_source = []
-                for year in range(target_year, target_year + avg_range):
-                    target_class_year_path = target_class_path / str(year)
-                    files_target += target_class_year_path.glob("*.parquet")
-                for year in range(source_year - 1, source_year + 2):
-                    source_class_year_path = source_class_path / str(year)
-                    files_source += source_class_year_path.glob("*.parquet")
-
+            if self.source_class == "HS1992":
+                source_year = 1992
+                target_year = 1988
             else:
-                target_class_year_path = target_class_path / str(target_year)
-                source_class_year_path = source_class_path / str(source_year)
-                files_target = target_class_year_path.glob("*.parquet")
-                files_source = source_class_year_path.glob("*.parquet")
+                source_year = 1988
+                target_year = 1992
 
-            self.logger.info(
-                f"{target_class}: {target_year} to {source_class}: {source_year}"
+            files_target = []
+            files_source = []
+            # HS to SITC conversions trade files are averaged over 3 years
+            # this is to ensure all products are captured, a requirement for the optimization code
+            for year in range(target_year, target_year + self.AVERAGE_RANGE):
+                target_class_year_path = self.target_class_path / str(year)
+                files_target += target_class_year_path.glob("*.parquet")
+
+            for year in range(source_year - 1, source_year + (self.AVERAGE_RANGE - 1)):
+                source_class_year_path = self.source_class_path / str(year)
+                files_source += source_class_year_path.glob("*.parquet")
+
+        else:
+            target_class_year_path = self.target_class_path / str(self.target_year)
+            source_class_year_path = self.source_class_path / str(self.source_year)
+            files_target = target_class_year_path.glob("*.parquet")
+            files_source = source_class_year_path.glob("*.parquet")
+        return files_target, files_source
+
+    def get_combined_correlation_file(self) -> pd.DataFrame:
+        """
+        Gets the correlation file for the source and target classes.
+        """
+        concordance_groups_path = self.data_path / "concordance_groups"
+        groups = pd.read_csv(
+            concordance_groups_path
+            / f"from_{self.source_class}_to_{self.target_class}.csv"
+        )
+        if not groups[
+            ((groups["code.source"].isna()) | (groups["code.target"].isna()))
+        ].empty:
+            raise ValueError(
+                f"Unexpected NA values need to be handled for {self.source_class} to {self.target_class} \n {groups[((groups['code.source'].isna()) | (groups['code.target'].isna()))]}"
             )
-            files_target = self.get_files_by_classification_in_year(
-                files_target, target_class_code
+        groups = groups.astype({"code.source": int, "code.target": int}).astype(
+            {"code.source": str, "code.target": str}
+        )
+        return groups
+
+    def filter_for_only_grouped_products(self, groups: pd.DataFrame) -> pd.DataFrame:
+        """
+        Filters the groups for only the products that are grouped.
+
+        This is to remove 1:1 groupings and single product groupings,
+        which are not passed into the optimization code since product mappings
+        are known
+        """
+        grouped_products = groups[groups["group.id"].notna()]
+        grouped_products["group.id"] = grouped_products["group.id"].astype(int)
+        grouped_products = clean_groups(
+            grouped_products, self.source_class, self.target_class
+        )
+        if (
+            1
+            in grouped_products.groupby("group.id")
+            .agg({"group.id": "count"})["group.id"]
+            .unique()
+        ):
+            raise ValueError(f"grouping of one product is invalid.")
+        if "1:1" in grouped_products.Relationship.unique():
+            raise ValueError(f"grouping of one to one relationship, is invalid.")
+        return grouped_products
+
+    def prep_trade_dataframes(
+        self,
+        classification_type: str,
+        classification: str,
+        year: int,
+        grouped_products: pd.DataFrame,
+        reporters: list,
+    ) -> pd.DataFrame:
+        """
+        prepares source and target dataframe inputs for the optimization code
+        returning country by product trade dataframe
+        """
+        df = self.get_trade_dataframe(classification, year)
+        # extract timely country reporters that switched to new classification year of release
+        df = self.filter_df_for_reporters(classification, df, reporters)
+
+        return self.country_by_prod_trade(
+            df, grouped_products, classification_type, classification
+        )
+
+    def get_trade_dataframe(self, classification: str, year: int) -> pd.DataFrame:
+        """
+        Requires the trade data to be downloaded and aggregated by year
+        and not converted to the target classification. Use ComtradeDownloader to download the data.
+        """
+        if self.source_class in ["HS1992", "SITC3"] and self.target_class in [
+            "HS1992",
+            "SITC3",
+        ]:
+            return self.generate_year_avgs(classification, year, self.AVERAGE_RANGE)
+        else:
+            self.aggregated_by_year_not_converted_path = Path(
+                self.downloaded_comtrade_data_path
+                / "aggregated_by_year_not_converted"
+                / "parquet"
             )
-            files_source = self.get_files_by_classification_in_year(
-                files_source, source_class_code
+            class_code = self.classification_translation_dict[classification]
+            trade_path = Path(
+                self.aggregated_by_year_not_converted_path,
+                class_code,
+                f"{class_code}_{year}.parquet",
             )
-            if not files_target or not files_source:
-                self.logger.error(
-                    "Check file path in user_config.py, must download data using ComtradeDownloader"
-                )
-                raise ValueError(
-                    f"No files found for {target_class} or {source_class} in {target_year} or {source_year}"
-                )
-            comtrade_dict = {target_year: files_target, source_year: files_source}
-            reporters = self.extract_reporters_with_timely_classification_update(
-                comtrade_dict
-            )
-            concordance_groups_path = self.data_path / "concordance_groups"
-            groups = pd.read_csv(
-                concordance_groups_path / f"from_{source_class}_to_{target_class}.csv"
-            )
-            if not groups[
-                ((groups["code.source"].isna()) | (groups["code.target"].isna()))
-            ].empty:
-                raise ValueError(
-                    f"check the concordance group file for {source_class} to {target_class} \n {groups[((groups['code.source'].isna()) | (groups['code.target'].isna()))]}"
-                )
-            groups = groups.astype({"code.source": int, "code.target": int}).astype(
-                {"code.source": str, "code.target": str}
-            )
+            try:
+                df = pd.read_parquet(trade_path)
+            except FileNotFoundError:
+                self.logger.error(f"File not found: {trade_path}")
+                self.logger.error(f"Run ComtradeDownloader to download the data")
+            return df
 
-            self.logger.info(
-                f"There are {len(reporters)} reporters who switched timely from {target_class} to {source_class}"
-            )
+    def generate_dataframes(
+        self, dfs: dict, table: str, source_year: int, target_year: int
+    ):
+        """
+        Generates the dataframes for the optimization code.
 
-            # need reporting importer
-            print(f"data for {target_class}/{target_class}_{target_year}")
-            print(f"data for {source_class}/{source_class}_{source_year}")
+        The dataframes are saved to the data/matrices folder.
+        The dataframes are named as follows:
+        {table}.matrix.start.{source_year}.end.{target_year}.group.{group_id}.csv
 
-            if source_class in ["HS1992", "SITC3"] and target_class in [
-                "HS1992",
-                "SITC3",
-            ]:
-                target_df = self.generate_year_avgs(
-                    target_class, target_year, avg_range
-                )
-                source_df = self.generate_year_avgs(
-                    source_class, source_year, avg_range
-                )
-
-            else:
-                self.aggregated_by_year_not_converted_path = Path(
-                    self.downloaded_comtrade_data_path
-                    / "aggregated_by_year_not_converted"
-                    / "parquet"
-                )
-                target_class_code = self.classification_translation_dict[target_class]
-                source_class_code = self.classification_translation_dict[source_class]
-                target_path = Path(
-                    self.aggregated_by_year_not_converted_path,
-                    target_class_code,
-                    f"{target_class_code}_{target_year}.parquet",
-                )
-                source_path = Path(
-                    self.aggregated_by_year_not_converted_path,
-                    source_class_code,
-                    f"{source_class_code}_{source_year}.parquet",
-                )
-                # CPY for reporting imports
-
-                try:
-                    target_df = pd.read_parquet(target_path)
-                except FileNotFoundError:
-                    self.logger.error(f"File not found: {target_path}")
-                    self.logger.error(f"Run ComtradeDownloader to download the data")
-                    raise
-                try:
-                    source_df = pd.read_parquet(source_path)
-                except FileNotFoundError:
-                    self.logger.error(f"File not found: {source_path}")
-                    self.logger.error(f"Run ComtradeDownloader to download the data")
-                    raise
-
-            # only want timely reporters switch to new classification upon release
-            target_df = self.filter_df_for_reporters(target_class, target_df, reporters)
-            source_df = self.filter_df_for_reporters(source_class, source_df, reporters)
-
-            # extract products that are not grouped all 1:1 and some N:1 relationships
-            grouped_products = groups[groups["group.id"].notna()]
-            grouped_products["group.id"] = grouped_products["group.id"].astype(int)
-
-            grouped_products = clean_groups(
-                grouped_products, source_class, target_class
-            )
-            if (
-                1
-                in grouped_products.groupby("group.id")
-                .agg({"group.id": "count"})["group.id"]
-                .unique()
-            ):
-                raise ValueError(f"grouping of one product is invalid.")
-            if "1:1" in grouped_products.Relationship.unique():
-                raise ValueError(f"grouping of one to one relationship, is invalid.")
-
-            target_dfs = self.country_by_prod_trade(
-                target_df, grouped_products, "target", target_class
-            )
-            source_dfs = self.country_by_prod_trade(
-                source_df, grouped_products, "source", source_class
-            )
-
-            target_dfs, source_dfs = self.align_reporter_indices(
-                grouped_products, target_dfs, source_dfs
-            )
-
-            group_dfs = self.conversion_matrix(grouped_products)
-
-            self.generate_dataframes(
-                target_dfs, "target.trade", source_year, target_year
-            )
-            self.generate_dataframes(
-                source_dfs, "source.trade", source_year, target_year
-            )
-            self.generate_dataframes(group_dfs, "conversion", source_year, target_year)
-
-    def generate_dataframes(self, dfs, table, source_year, target_year):
-        # generate data frames
+        The dataframes are used to generate the conversion weights.
+        """
 
         matrices_path = self.data_path / "matrices"
         files = matrices_path.glob(
@@ -227,14 +290,14 @@ class MatrixBuilder(Base):
                 if os.path.isfile(file_path):
                     os.remove(file_path)
                 else:
-                    print(f"File not found: {file_path}")
+                    self.logger.error(f"File not found: {file_path}")
             except Exception as e:
-                print(f"Error deleting {file_path}: {str(e)}")
+                self.logger.error(f"Error deleting {file_path}: {str(e)}")
 
         for group_id, df in dfs.items():
             if df.empty:
                 # drop nans
-                print(f"df is empty for {table} group: {group_id}")
+                self.logger.debug(f"df is empty for {table} group: {group_id}")
                 continue
 
             df = df.fillna(0)
@@ -248,7 +311,15 @@ class MatrixBuilder(Base):
                 / f"{table}.matrix.start.{source_year}.end.{target_year}.group.{group_id}.csv"
             )
 
-    def align_reporter_indices(self, groups, target_dfs, source_dfs):
+    def align_reporter_indices(
+        self, groups: pd.DataFrame, target_dfs: dict, source_dfs: dict
+    ) -> tuple[dict, dict]:
+        """
+        Aligns the reporter indices for the target and source dataframes.
+
+        This is to ensure that the reporter indices are the same for the target and source dataframes.
+        This is a requirement for the optimization code.
+        """
         # enforces shared reporter indices
         for group_id in groups["group.id"].unique().tolist():
             tdf = target_dfs[group_id].reset_index()
@@ -266,19 +337,43 @@ class MatrixBuilder(Base):
 
         return target_dfs, source_dfs
 
-    def get_files_by_classification_in_year(self, files, classification_source):
+    def get_files_by_classification_in_year(
+        self, files: list, classification: str
+    ) -> list:
+        """
+        Extracts lists of files by classification in a given year.
+        """
         files_classification_year = []
         files = [file.name for file in files]
         for file in files:
             f = ComtradeFile(file)
-            if f.classification == classification_source:
+            if f.classification == classification:
                 files_classification_year.append(file)
-        # print(files_classification_year)
+
+        if not files_classification_year:
+            self.logger.error(
+                "Check file path in user_config.py, must download data using ComtradeDownloader"
+            )
+            raise ValueError(f"No files found for {classification}... exiting program")
         return files_classification_year
 
-    def extract_reporters_with_timely_classification_update(self, comtrade_dict):
+    def extract_reporters_with_timely_classification_update(
+        self, comtrade_dict: dict
+    ) -> list:
+        """
+        When trade classification systems change (e.g., from HS1992 to HS2012),
+        not all countries adopt the new system immediately. Some countries are
+        "timely" and switch right away, while others lag behind.
+
+        Country reporters must be identical between target and source input
+        dataframes, therefore we identify the reporters meet the below criteria:
+
+            - Used the old system in the year before the change
+            - Switched to the new system in the year of the change
+
+        """
         reporters_dict = {}
-        for year, files in comtrade_dict.items():
+        for _, files in comtrade_dict.items():
             for file in files:
                 f = ComtradeFile(file)
                 reporters_dict[str(f.reporter_code)] = reporters_dict.get(
@@ -290,7 +385,15 @@ class MatrixBuilder(Base):
             if isinstance(value, list) and len(value) >= 2
         ]
 
-    def generate_year_avgs(self, classification, start_year, avg_range):
+    def generate_year_avgs(self, classification: str, start_year: int) -> pd.DataFrame:
+        """
+        Generates year averages for the trade data.
+
+        This is to ensure that the trade data is complete for the year.
+
+        For SITC to HS conversions,the trade data is averaged because target
+        and source years were not comprehensively reporting all products
+        """
         df = pd.DataFrame(
             columns=[
                 "reporterISO3",
@@ -305,7 +408,7 @@ class MatrixBuilder(Base):
 
         detailed_product_level = get_detailed_product_level(classification)
 
-        print(f"adding starting year {start_year} into the avg")
+        self.logger.debug(f"adding starting year {start_year} into the avg")
         classification_code = self.classification_translation_dict[classification]
         df_path = (
             self.aggregated_by_year_not_converted_path
@@ -340,8 +443,8 @@ class MatrixBuilder(Base):
             }
         )
 
-        for year in range(start_year + 1, start_year + avg_range):
-            print(f"adding {year} into the avg")
+        for year in range(start_year + 1, start_year + self.AVERAGE_RANGE):
+            self.logger.debug(f"adding {year} into the avg")
             classification_code = self.classification_translation_dict[classification]
             df_path = (
                 self.aggregated_by_year_not_converted_path
@@ -382,9 +485,15 @@ class MatrixBuilder(Base):
         df["digitLevel"] = detailed_product_level
         return df
 
-    def filter_df_for_reporters(self, classification, df, reporters):
+    def filter_df_for_reporters(
+        self, classification: str, df: pd.DataFrame, reporters: list
+    ) -> pd.DataFrame:
+        """
+        Filters the dataframe for the list of reporters identified as timely.
+        """
         detailed_product_level = get_detailed_product_level(classification)
 
+        # country reporters are more likely to report imports than exports
         df = df[(df.flowCode == "M") & (df.digitLevel == detailed_product_level)]
         reporter = comtradeapicall.getReference("reporter")
         partner = comtradeapicall.getReference("partner")
@@ -406,7 +515,6 @@ class MatrixBuilder(Base):
             right_on="PartnerCodeIsoAlpha3",
             how="left",
         )
-
         return df[df.reporterCode.isin(reporters)]
 
     def country_by_prod_trade(self, df, groups, classification_type, prod_class):

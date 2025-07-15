@@ -9,7 +9,7 @@ exe_dir=`dirname "$0"`
 echo "------------------------------------------"
 if [ "x$1" = "x" ]; then
   echo Usage:
-  echo    $0 \<deployedMCRroot\> args
+  echo    $0 /Applications/MATLAB/MATLAB_Runtime/R2024b args
 else
   echo Setting up environment variables
   MCRROOT="$1"

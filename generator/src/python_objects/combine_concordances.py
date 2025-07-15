@@ -13,15 +13,13 @@ from src.config.product_mappings import non_corded_product_matches
 class CombineConcordances(Base):
 
     MAX_TRUNCATION_ATTEMPTS = 4
-    # non_concorded_product_file = "data/static/product_missing_concordance.csv"
 
     def __init__(self, conversion_weights_pairs):
         super().__init__(conversion_weights_pairs)
 
-        self.concatentate_concordance_to_main()
-        # self.concordance_files = concordance_files
+        self.concatenate_concordance_to_main()
 
-    def concatentate_concordance_to_main(self):
+    def concatenate_concordance_to_main(self):
         """
         RUN TO ADD Comtrade Concordance Tables to A Consolidated/Clean concordance table
         """
@@ -48,7 +46,7 @@ class CombineConcordances(Base):
                 if col in df.columns:
                     df[col] = df[col].astype(str)
 
-            print(f"added {file.name} to consolidated concordance table")
+            self.logger.debug(f"added {file.name} to consolidated concordance table")
             non_concorded_products = []
             non_concorded_df = pd.DataFrame()
             non_concorded_df.to_csv(
@@ -58,7 +56,7 @@ class CombineConcordances(Base):
                 ("source", source),
                 ("target", target),
             ]:
-                print(f"loading in {classification} products")
+                self.logger.debug(f"loading in {classification} products")
                 products = pd.read_excel(
                     self.static_data_path
                     / f"all_products_by_classification/{classification}.xlsx",
@@ -462,7 +460,7 @@ class CombineConcordances(Base):
                 try:
                     df = df[~df[code_type].isin(codes)]
                 except:
-                    print(f"Error dropping {codes} for {adjustment_period}")
+                    self.logger.error(f"Error dropping {codes} for {adjustment_period}")
         return df
 
     def clean_data(self, df):

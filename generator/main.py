@@ -1,5 +1,6 @@
 from src.python_objects.build_input_matrices import MatrixBuilder
-from src.python_objects.prep_for_pipeline import MatlabProgramRunner, GroupWeights
+from src.python_objects.group_weights import GroupWeights
+from src.python_objects.run_weight_optimizer import MatlabProgramRunner
 from src.python_objects.combine_concordances import CombineConcordances
 from src.utils import util
 from pathlib import Path
@@ -24,7 +25,7 @@ def run():
 
     if COMBINE_CONCORDANCES:
         logger.info("Combining concordances")
-        CombineConcordances(conversion_weights_pairs).concatentate_concordance_to_main()
+        CombineConcordances(conversion_weights_pairs).concatenate_concordance_to_main()
 
     if CREATE_PRODUCT_GROUPS:
         logger.info("Creating product groups")
@@ -45,8 +46,11 @@ def run():
         # build source classification, target classification, and correlation matrices
         logger.info("Building input matrices")
         util.cleanup_input_matrices(base_obj)
-        matrix_builder = MatrixBuilder(conversion_weights_pairs)
-        matrix_builder.build()
+        for conversion_weight_pair in conversion_weights_pairs:
+            matrix_builder = MatrixBuilder(conversion_weight_pair)
+            matrix_builder.build()
+        # matrix_builder = MatrixBuilder(conversion_weights_pairs)
+        # matrix_builder.build()
 
     if GENERATE_WEIGHTS:
         logger.info("Generating weights")
