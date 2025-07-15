@@ -1,4 +1,4 @@
-# RUN after Groups from R code has been generated in the data/concordance_groups folder
+# RUN after Groups from R code has been generated in the data/correlation_groups folder
 # PREP CONVERSION, TRADE VALUE TABLES AND WEIGHT TABLES
 
 import pandas as pd
@@ -176,9 +176,9 @@ class MatrixBuilder(Base):
         """
         Gets the correlation file for the source and target classes.
         """
-        concordance_groups_path = self.data_path / "concordance_groups"
+        correlation_groups_path = self.data_path / "correlation_groups"
         groups = pd.read_csv(
-            concordance_groups_path
+            correlation_groups_path
             / f"from_{self.source_class}_to_{self.target_class}.csv"
         )
         if not groups[

@@ -1,7 +1,7 @@
 from src.python_objects.build_input_matrices import MatrixBuilder
 from src.python_objects.group_weights import GroupWeights
 from src.python_objects.run_weight_optimizer import MatlabProgramRunner
-from src.python_objects.combine_concordances import CombineConcordances
+from src.python_objects.combine_correlation_tables import CombineCorrelationTables
 from src.utils import util
 from pathlib import Path
 import subprocess
@@ -24,8 +24,9 @@ def run():
     logger = base_obj.logger
 
     if COMBINE_CONCORDANCES:
+        # runs all correlation tables through the concatenation process
         logger.info("Combining concordances")
-        CombineConcordances(conversion_weights_pairs).concatenate_concordance_to_main()
+        CombineCorrelationTables().concatenate_tables_to_main()
 
     if CREATE_PRODUCT_GROUPS:
         logger.info("Creating product groups")

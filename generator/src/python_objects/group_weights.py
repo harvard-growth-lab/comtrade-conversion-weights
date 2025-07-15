@@ -79,7 +79,7 @@ class GroupWeights(Base):
                 combined_result = pd.concat([combined_result, weight_long])
                 # except:
                 #     print("failed")
-            groups_dir = self.data_path / "concordance_groups"
+            groups_dir = self.data_path / "correlation_groups"
             groups = pd.read_csv(
                 groups_dir / f"from_{source_class}_to_{target_class}.csv",
                 dtype={source_class: str, target_class: str},

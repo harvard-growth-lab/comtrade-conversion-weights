@@ -26,9 +26,6 @@ rm(list = ls())
 # Set working directory
 setwd(here("generator"))
   
-# Get iterations dataframe from command line
-# iterations_df <- parse_args()
-
 ### The 'create.groups' function:
 create.groups=function(data ## Specify a two column dataframe with the code correspondences
                        # direct = direction
@@ -111,8 +108,8 @@ for(i in 1:nrow(iterations_df)) {
   }
   
   ### Load all HS vintage correspondences:
-  all.vintages  <- read.csv("data/output/consolidated_concordance/consolidated_comtrade_concordances.csv")
-  ## comtrade always provides concordance tables in later classification to earlier classification
+  all.vintages  <- read.csv("data/output/consolidated_correlation/consolidated_comtrade_correlation_tables.csv")
+  ## comtrade always provides correlation tables in later classification to earlier classification
   conversion <- subset(all.vintages, adjustment == sprintf("%s to %s", year_1, year_2))
   
   conversion$code.before = as.numeric(conversion$code.before)
@@ -139,7 +136,7 @@ for(i in 1:nrow(iterations_df)) {
     
   }
   
-  write.csv(conversion, file = sprintf("data/concordance_groups/from_%s_to_%s.csv", source_classification, target_classification), row.names=FALSE)
+  write.csv(conversion, file = sprintf("data/correlation_groups/from_%s_to_%s.csv", source_classification, target_classification), row.names=FALSE)
 
   # Optional: Print status
   cat("Completed conversion from", source_classification, "to", target_classification, "\n")
