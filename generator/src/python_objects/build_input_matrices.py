@@ -46,8 +46,6 @@ class MatrixBuilder(Base):
         generates conversion and trade values matrices that is
         ready for matlab code to generate conversion weights
         """
-        self.logger.info("building input matrices...")
-
         # for conversion_weight_pair in self.conversion_weights_pairs:
 
         self.get_source_and_target_years()
