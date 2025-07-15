@@ -6,7 +6,6 @@ from pathlib import Path
 import pandas as pd
 import typing
 import glob
-import pyarrow.parquet as pq
 import logging
 import shutil
 from datetime import datetime
