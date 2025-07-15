@@ -14,11 +14,11 @@ from src.config.constants import SOURCE_TARGET_ENABLED_PAIRS
 # PROCESSING STEPS TO RUN
 # =============================================================================
 
-COMBINE_CONCORDANCES = True
-CREATE_PRODUCT_GROUPS = True
-BUILD_INPUT_MATRICES = True
-GENERATE_WEIGHTS = True
-GROUP_WEIGHTS = False
+COMBINE_CONCORDANCES = False
+CREATE_PRODUCT_GROUPS = False
+BUILD_INPUT_MATRICES = False
+GENERATE_WEIGHTS = False
+GROUP_WEIGHTS = True
 
 # =============================================================================
 # PATHS CONFIGURATION

@@ -137,8 +137,7 @@ for(i in 1:nrow(iterations_df)) {
   }
   
   write.csv(conversion, file = sprintf("data/correlation_groups/from_%s_to_%s.csv", source_classification, target_classification), row.names=FALSE)
-
-  # Optional: Print status
-  cat("Completed conversion from", source_classification, "to", target_classification, "\n")
 }
+cat("Generated group assignments for all classifications, written to data/correlation_groups folder")
+
 

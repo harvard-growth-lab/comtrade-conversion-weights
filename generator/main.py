@@ -1,5 +1,5 @@
 from src.python_objects.build_input_matrices import MatrixBuilder
-from src.python_objects.group_weights import GroupWeights
+from src.python_objects.concatenate_weights_by_conversion_pair import ConcatenateWeights
 from src.python_objects.run_weight_optimizer import MatlabProgramRunner
 from src.python_objects.combine_correlation_tables import CombineCorrelationTables
 from src.utils import util
@@ -18,6 +18,24 @@ from tests.test import TestData
 
 
 def run():
+    """
+    Runs the main generator code.
+
+    The generator code is a pipeline that:
+    1. Combines the correlation tables provided by Comtrade into a single file
+    2. Creates product groups based on the correlation tables
+    3. Builds input (trade in source classification, trade in
+        target classification, and correlation within group) matrices
+    4. Generates weights for the input matrices using a matlab optimization program
+    5. Groups the weights by start and end year pairs and saves the final weights
+
+    The generator code is run in the following order:
+    1. CombineCorrelationTables
+    2. CreateProductGroups
+    3. BuildInputMatrices
+    4. GenerateWeights
+    5. GroupWeights
+    """
 
     conversion_weights_pairs = get_enabled_conversions()
     base_obj = Base(conversion_weights_pairs)
@@ -62,14 +80,15 @@ def run():
             raise ValueError(f"Failed tests: {failed_tests}")
 
         util.cleanup_weight_files(base_obj)
-        matlab_runner = MatlabProgramRunner(conversion_weights_pairs)
+        matlab_runner = MatlabProgramRunner()
         matlab_runner.write_matlab_params()
         matlab_runner.run_matlab_optimization()
 
     if GROUP_WEIGHTS:
         logger.info("Grouping weights by start and end year pairs")
-        grouper = GroupWeights(conversion_weights_pairs)
-        grouper.run()
+        for conversion_weights_pair in conversion_weights_pairs:
+            concatenate_obj = ConcatenateWeights(conversion_weights_pair)
+            concatenate_obj.run()
 
 
 if __name__ == "__main__":
