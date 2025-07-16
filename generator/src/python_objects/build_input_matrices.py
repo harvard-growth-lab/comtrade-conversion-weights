@@ -40,6 +40,12 @@ class MatrixBuilder(Base):
         self.source_class_path = (
             self.downloaded_comtrade_parquet_path / self.source_class_code
         )
+        self.aggregated_by_year_not_converted_path = Path(
+            self.downloaded_comtrade_data_path
+            / "aggregated_by_year_not_converted"
+            / "parquet"
+        )
+
         self.correlation_groups_path = self.data_path / "correlation_groups"
         self.setup_paths(self.correlation_groups_path)
 
@@ -247,11 +253,6 @@ class MatrixBuilder(Base):
         ]:
             return self.generate_year_avgs(classification, year)
         else:
-            self.aggregated_by_year_not_converted_path = Path(
-                self.downloaded_comtrade_data_path
-                / "aggregated_by_year_not_converted"
-                / "parquet"
-            )
             class_code = self.classification_translation_dict[classification]
             trade_path = Path(
                 self.aggregated_by_year_not_converted_path,
