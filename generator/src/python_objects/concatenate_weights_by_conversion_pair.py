@@ -181,6 +181,6 @@ class ConcatenateWeights(Base):
         ]
         optimized_conversion_weights.to_csv(
             self.final_optimized_weights_dir
-            / f"conversion_weights_{self.source_class}_{self.target_class}.csv",
+            / f"conversion_weights_{self.source_class_code}_to_{self.target_class_code}.csv",
             index=False,
         )
