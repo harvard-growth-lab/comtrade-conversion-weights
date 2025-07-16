@@ -8,7 +8,10 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from src.python_objects.base import Base
 from src.utils.util import get_detailed_product_level
-from src.config.product_mappings import products_mapped_manually, SPECIAL_CASES
+from data.static.product_mappings import (
+    products_mapped_manually,
+    product_codes_without_wco_mappings,
+)
 
 
 class CombineCorrelationTables(Base):
@@ -59,7 +62,7 @@ class CombineCorrelationTables(Base):
             if col in df.columns:
                 df[col] = df[col].astype(str)
 
-        self.logger.info(f"concatenating {file.name}")
+        self.logger.debug(f"concatenating {file.name}")
         products_without_wco_mapping = []
         products_not_mapped = pd.DataFrame()
         products_not_mapped.to_csv(
@@ -95,8 +98,7 @@ class CombineCorrelationTables(Base):
             df, products_not_mapped, products_mapped_manually
         )
 
-        df = df.drop_duplicates(subset=["code.after", "code.before", "adjustment"])
-        df = self.handle_special_cases(df)
+        df = self.clean_correlation_tables(df)
         return self.recalculate_relationship_column(df)
 
     def extract_classifications(self, filename: str) -> tuple[str, str]:
@@ -468,11 +470,16 @@ class CombineCorrelationTables(Base):
             return new_df
         return correlation
 
-    def handle_special_cases(self, df):
+    def clean_correlation_tables(self, df):
         """
-        Handle special cases where the product code is not in the correlation table
+        Cleans correlations tables.
+        - Ensures the correlation tables are complete without duplicated or missing products
         """
-        for adjustment_period, (code_type, codes) in SPECIAL_CASES.items():
+        df = df.drop_duplicates(subset=["code.after", "code.before", "adjustment"])
+        for adjustment_period, (
+            code_type,
+            codes,
+        ) in product_codes_without_wco_mappings.items():
             if adjustment_period in df.adjustment.unique():
                 try:
                     df = df[~df[code_type].isin(codes)]

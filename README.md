@@ -8,17 +8,15 @@ Converts trade data between adjacent classification vintages by implementing a w
 
 EX: (HS1992 → HS1996, SITC3 → HS1992, etc.) 
 
-image.png
+![A digram of the processing for the comtrade-conversion-weights. We begin with data as reported by Country Reporters & Correlation Tables from Comtrade. Each adjacent classification pair (adjustment period) in a Correlation Table is disaggrated into groups - which can comprehensively correlates the source classification vintage product codes into the target classification vintage product codes. Next, the trade data from Comtrade is used to identify the set of reporters that switched to reporting in the next classification vintage the year it was released. Matrices grouped by their Correlation grouping of products and the associated trade value in the source and target classification vintage for the timely set of reporters serves as the inputs to the optimization algorithm which outputs the conversion weights. ](generator/images/comtrade_weight_conversion_diagram.png)
 
 The above diagram breaks down the processing steps for generating conversion weights from Comtrade's Correlation Tables obtained from the World Customs Organization (WCO).
-
-We begin with data as reported by Country Reporters & Correlation Tables from Comtrade. Each adjacent classification pair (adjustment period) in a Correlation Table is disaggrated into groups - which can comprehensively correlates the source classification vintage product codes into the target classification vintage product codes. Next, the trade data from Comtrade is used to identify the set of reporters that switched to reporting in the next classification vintage the year it was released. Matrices grouped by their Correlation grouping of products and the associated trade value in the source and target classification vintage for the timely set of reporters serves as the inputs to the optimization algorithm which outputs the conversion weights. 
 
 
 ### Prerequisites
 - Python 3.10+
-- ([Poetry](https://python-poetry.org/docs/)) for managing dependencies
--  ([R](https://cran.rstudio.com/)) (for product grouping) 
+- [Poetry](https://python-poetry.org/docs/) for managing dependencies
+- [R](https://cran.rstudio.com/) (for product grouping) 
 - MATLAB (for optimization code)
 - Premium UN Comtrade API key ([get one here](https://comtradeplus.un.org/))
 - Raw Comtrade data files (([download from comtrade-downloader](https://github.com/harvard-growth-lab/comtrade-downloader)))
@@ -27,7 +25,7 @@ We begin with data as reported by Country Reporters & Correlation Tables from Co
 ```bash
 git clone https://github.com/your-org/comtrade-conversion-weights.git
 cd comtrade-conversion-weights
-pipx install poetry && poetry install
+poetry install && poetry shell
 
 # Load Comtrade API key
 export COMTRADE_API_KEY="your_key_here"

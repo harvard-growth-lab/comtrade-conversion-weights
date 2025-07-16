@@ -41,7 +41,7 @@ class MatrixBuilder(Base):
             self.downloaded_comtrade_parquet_path / self.source_class_code
         )
         self.correlation_groups_path = self.data_path / "correlation_groups"
-        self.set_up_paths(self.correlation_groups_path)
+        self.setup_paths(self.correlation_groups_path)
 
     def build(self):
         """

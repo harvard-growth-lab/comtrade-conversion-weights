@@ -9,8 +9,8 @@ import glob
 import logging
 import shutil
 from datetime import datetime
-from src.config.user_config import LOG_LEVEL
-from src.config.user_config import RAW_DOWNLOADED_COMTRADE_DATA_PATH
+from user_config import LOG_LEVEL
+from user_config import RAW_DOWNLOADED_COMTRADE_DATA_PATH
 
 pd.options.display.max_columns = None
 pd.options.display.max_rows = None

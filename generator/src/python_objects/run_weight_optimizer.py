@@ -9,8 +9,8 @@ import subprocess
 
 
 class MatlabProgramRunner(Base):
-    def __init__(self, conversion_weight_pairs={}):
-        super().__init__(conversion_weight_pairs={})
+    def __init__(self, conversion_weights_pairs={}):
+        super().__init__(conversion_weights_pairs={})
 
     def write_matlab_params(self) -> None:
         """
@@ -83,8 +83,6 @@ class MatlabProgramRunner(Base):
         script_dir = self.root_dir / "src" / "scripts"
         bash_script = script_dir / "run_matlab_optimization.sh"
 
-        # make the bash script executable
-        os.chmod(bash_script, 0o755)
         try:
             subprocess.run(
                 [
@@ -95,12 +93,21 @@ class MatlabProgramRunner(Base):
                 ],
                 check=True,
             )
+        except FileNotFoundError:
+            raise ValueError(
+                "MATLAB not found. Please install MATLAB and ensure it's in your PATH. "
+                "You can test this by running 'matlab -nodisplay -batch \"disp('test')\"' "
+                "from the command line."
+            )
         except subprocess.CalledProcessError as e:
             raise ValueError(
-                "Error; MATLAB either isn't installed or "
-                "isn't properly added to your system's PATH"
-                "environment variable"
+                f"MATLAB found but failed to run properly. Error: {e.stderr if e.stderr else e}"
             )
+
+        try:
+            os.chmod(bash_script, 0o755)
+        except FileNotFoundError:
+            raise ValueError(f"Bash script not found: {bash_script}")
 
         try:
             result = subprocess.run(
@@ -113,7 +120,9 @@ class MatlabProgramRunner(Base):
                 self.logger.error("Errors:", result.stderr)
 
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"Error running MATLAB optimization: {e}")
-            self.logger.error("Error output:", e.stderr)
-        except Exception as e:
-            self.logger.error(f"Unexpected error: {e}")
+            error_msg = f"MATLAB optimization failed with return code {e.returncode}"
+            if e.stderr:
+                error_msg += f"\nError output: {e.stderr}"
+            if e.stdout:
+                error_msg += f"\nStandard output: {e.stdout}"
+            raise ValueError(error_msg)
