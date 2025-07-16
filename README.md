@@ -33,13 +33,13 @@ export COMTRADE_API_KEY="your_key_here"
 
 ## Quick Start
 
-1. **Configure** what conversions you want in `src/config/user_config.py`
+1. **Configure** what conversions you want in `user_config.py`
 2. **Run** `python main.py`
 3. **Find results** in `data/output/optimized_conversion_weights/`
 
 ## Configuration
 
-Edit `src/config/user_config.py`:
+Edit `user_config.py`:
 
 ### Select Adjacent Classification Pairs 
 ```python
@@ -98,8 +98,9 @@ Each file contains: `source_code, target_code, weight, group_id`
 ```
 generator/
 ├── main.py                          # Main entry point
+├── user_config.py                   # Configuration
 ├── src/
-│   ├── config/user_config.py        # Configuration
+│   ├── config/                      
 │   ├── python_objects/              # Core processing classes
 │   ├── matlab/                      # MATLAB optimization routines
 │   ├── R_code/                      # Product grouping scripts
