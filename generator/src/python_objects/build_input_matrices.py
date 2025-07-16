@@ -245,7 +245,7 @@ class MatrixBuilder(Base):
             "HS1992",
             "SITC3",
         ]:
-            return self.generate_year_avgs(classification, year, self.AVERAGE_RANGE)
+            return self.generate_year_avgs(classification, year)
         else:
             self.aggregated_by_year_not_converted_path = Path(
                 self.downloaded_comtrade_data_path
