@@ -7,7 +7,7 @@
 #SBATCH -e matlab_job_%j.err
 
 # Load MATLAB module
-module load matlab/R2021a-fasrc01
+# module load matlab/R2021a-fasrc01
 
 # Record start time
 start_time=$(date +%s)

@@ -81,7 +81,7 @@ class MatlabProgramRunner(Base):
         Runs the MATLAB optimization code to generate weights
         """
         script_dir = self.root_dir / "src" / "scripts"
-        bash_script = script_dir / "run_matlab_optimization.sh"
+        bash_script = script_dir / "run_weight_optimization_generator.sh"
 
         try:
             subprocess.run(
