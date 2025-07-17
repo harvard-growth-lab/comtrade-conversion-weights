@@ -10,7 +10,7 @@ for group = groups
     disp(strcat('Running group:', num2str(group)))
 
     current_dir = pwd;
-    data_dir = fullfile(current_dir, 'data', 'matrices');
+    data_dir = fullfile(current_dir, '..', '..', 'data', 'matrices');
 
     filename = sprintf('conversion.matrix.start.%d.end.%d.group.%d.csv', start_year, end_year, group);
     filepath = fullfile(data_dir, filename);
@@ -215,7 +215,7 @@ for group = groups
     disp('Time used for optimization (in seconds):')
     disp(time_hes_con)
 
-    weights_dir = fullfile(pwd, 'data', 'conversion_weights');
+    weights_dir = fullfile(current_dir, '..', '..', 'data', 'conversion_weights');
     if ~exist(weights_dir, 'dir')
         mkdir(weights_dir);
     end

@@ -10,15 +10,6 @@ import sys
 from datetime import date, timedelta
 from src.config.source_target_pairs import SOURCE_TARGET_ENABLED_PAIRS
 
-# =============================================================================
-# PROCESSING STEPS TO RUN
-# =============================================================================
-
-COMBINE_CONCORDANCES = True
-CREATE_PRODUCT_GROUPS = True
-BUILD_INPUT_MATRICES = True
-GENERATE_WEIGHTS = True
-GROUP_WEIGHTS = True
 
 # =============================================================================
 # PATHS CONFIGURATION
@@ -26,8 +17,7 @@ GROUP_WEIGHTS = True
 
 # top file directory path data downloaded from comtrade
 RAW_DOWNLOADED_COMTRADE_DATA_PATH = (
-    # "/media/psf/AllFiles/Users/ELJ479/projects/data_downloads/comtrade_test"
-    "/n/hausmann_lab/lab/atlas/data"
+    # "/data/path/here"
 )
 
 # =============================================================================
@@ -44,20 +34,22 @@ ENABLE_ALL_CONVERSIONS = False
 # Enable/disable specific source-target class pairs for conversion
 # Set to True for the conversions you want to enable
 
+# optimized weights are provided in the comtrade-downloader as a static data input
+
 # BACKWARD HS CONVERSIONS (newer to older)
-CONVERT_SITC2_TO_SITC1 = True
-CONVERT_SITC3_TO_SITC2 = False
-CONVERT_HS92_TO_SITC3 = False
-CONVERT_HS96_TO_HS92 = False
+CONVERT_HS96_TO_HS92 = True
 CONVERT_HS02_TO_HS96 = False
 CONVERT_HS07_TO_HS02 = False
 CONVERT_HS12_TO_HS07 = False
 CONVERT_HS17_TO_HS12 = False
 CONVERT_HS22_TO_HS17 = False
 
+CONVERT_HS92_TO_SITC3 = False
+CONVERT_SITC2_TO_SITC1 = False
+CONVERT_SITC3_TO_SITC2 = False
+
+
 # FORWARD HS CONVERSIONS (older to newer)
-CONVERT_SITC1_TO_SITC2 = False
-CONVERT_SITC2_TO_SITC3 = False
 CONVERT_SITC3_TO_HS92 = False
 CONVERT_HS92_TO_HS96 = False
 CONVERT_HS96_TO_HS02 = False
@@ -66,11 +58,26 @@ CONVERT_HS07_TO_HS12 = False
 CONVERT_HS12_TO_HS17 = False
 CONVERT_HS17_TO_HS22 = False
 
+CONVERT_HS92_TO_SITC3 = False
+CONVERT_SITC1_TO_SITC2 = False
+CONVERT_SITC2_TO_SITC3 = False
+
+
 # =============================================================================
 # LOGGING CONFIGURATION
 # =============================================================================
 
 LOG_LEVEL = "INFO"
+
+# =============================================================================
+# PROCESSING STEPS TO RUN (ADVANCED)
+# =============================================================================
+
+COMBINE_CONCORDANCES = True
+CREATE_PRODUCT_GROUPS = True
+BUILD_INPUT_MATRICES = True
+GENERATE_WEIGHTS = True
+GROUP_WEIGHTS = True
 
 # =============================================================================
 # SETUP

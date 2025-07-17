@@ -10,7 +10,7 @@ for group = groups
     disp(strcat('Running group:', num2str(group)))
 
     current_dir = pwd;
-    data_dir = fullfile(current_dir, 'data', 'matrices');
+    data_dir = fullfile(current_dir, '..', '..', 'data', 'matrices');
 
     filename = sprintf('conversion.matrix.start.%d.end.%d.group.%d.csv', start_year, end_year, group);
     filepath = fullfile(data_dir, filename);
