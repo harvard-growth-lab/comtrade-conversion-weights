@@ -37,20 +37,27 @@ def cleanup_files_from_dir(files):
 
 
 def cleanup_input_matrices(obj):
-    for conversion_weight_pair in obj.conversion_weights_pairs:
-        matrices_dir = obj.data_path / "matrices"
+    """
+    deletes all conversion files in matrices dir
+    
+    the matrices folder determines the params for what will run in matlab
+    """
+    matrices_dir = obj.data_path / "matrices"
 
-        # clear matrices from previous runs if they exist for this conversion
-        if matrices_dir.exists():
-            matrices_clean_up_files = list(
-                matrices_dir.glob(
-                    f"conversion.matrix.start.{conversion_weight_pair['source_year']}.end.{conversion_weight_pair['target_year']}.group.*.csv"
-                )
+    # clear matrices from previous runs if they exist for this conversion
+    if matrices_dir.exists():
+        matrices_clean_up_files = list(
+            matrices_dir.glob(
+                f"conversion.matrix.start.*.end.*.group.*.csv"
             )
-            cleanup_files_from_dir(matrices_clean_up_files)
+        )
+        cleanup_files_from_dir(matrices_clean_up_files)
 
 
 def cleanup_weight_files(obj):
+    """
+    only deletes conversion weight files for enabled pairs 
+    """
     for conversion_weight_pair in obj.conversion_weights_pairs:
         weights_dir = obj.data_path / "conversion_weights"
         if weights_dir.exists():

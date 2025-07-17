@@ -1,4 +1,5 @@
 import sys
+import os
 from src.python_objects.build_input_matrices import MatrixBuilder
 from src.python_objects.concatenate_weights_by_conversion_pair import ConcatenateWeights
 from src.python_objects.run_weight_optimizer import MatlabProgramRunner
@@ -56,12 +57,11 @@ def run():
                     capture_output=True,
                     check=True,
                     text=True,
+                    env=dict(os.environ, R_QUIET="TRUE")
                 )
                 logger.info(result.stdout)
             except subprocess.CalledProcessError as e:
-                logger.error("STDOUT:", e.stdout)
-                logger.error("STDERR:", e.stderr)
-                logger.error("Return code:", e.returncode)
+                logger.error(f"R script error: {e}")
 
         if BUILD_INPUT_MATRICES:
             # build source classification, target classification, and correlation matrices
@@ -70,8 +70,6 @@ def run():
             for conversion_weight_pair in conversion_weights_pairs:
                 matrix_builder = MatrixBuilder(conversion_weight_pair)
                 matrix_builder.build()
-            # matrix_builder = MatrixBuilder(conversion_weights_pairs)
-            # matrix_builder.build()
 
         if GENERATE_WEIGHTS:
             logger.info("Generating weights")

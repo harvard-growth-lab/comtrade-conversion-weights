@@ -57,11 +57,15 @@ class Base(object):
         self.static_data_path = self.data_path / "static"
         self.output_path = self.data_path / "output"
         self.downloaded_comtrade_data_path = Path(RAW_DOWNLOADED_COMTRADE_DATA_PATH)
+        self.correlation_groups_path = self.data_path / "correlation_groups"
+        self.conversion_weights_path = self.data_path / "conversion_weights"
         for path in [
             self.data_path,
             self.static_data_path,
             self.output_path,
             self.downloaded_comtrade_data_path,
+            self.correlation_groups_path,
+            self.conversion_weights_path,
         ]:
             self.setup_paths(path)
 

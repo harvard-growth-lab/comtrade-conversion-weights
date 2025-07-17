@@ -26,7 +26,8 @@ GROUP_WEIGHTS = True
 
 # top file directory path data downloaded from comtrade
 RAW_DOWNLOADED_COMTRADE_DATA_PATH = (
-    "/media/psf/AllFiles/Users/ELJ479/projects/data_downloads/comtrade_test"
+    # "/media/psf/AllFiles/Users/ELJ479/projects/data_downloads/comtrade_test"
+    "/n/hausmann_lab/lab/atlas/data"
 )
 
 # =============================================================================
@@ -44,10 +45,10 @@ ENABLE_ALL_CONVERSIONS = False
 # Set to True for the conversions you want to enable
 
 # BACKWARD HS CONVERSIONS (newer to older)
-CONVERT_SITC2_TO_SITC1 = False
+CONVERT_SITC2_TO_SITC1 = True
 CONVERT_SITC3_TO_SITC2 = False
 CONVERT_HS92_TO_SITC3 = False
-CONVERT_HS96_TO_HS92 = True
+CONVERT_HS96_TO_HS92 = False
 CONVERT_HS02_TO_HS96 = False
 CONVERT_HS07_TO_HS02 = False
 CONVERT_HS12_TO_HS07 = False

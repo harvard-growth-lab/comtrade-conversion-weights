@@ -26,6 +26,8 @@ The above diagram breaks down the processing steps for generating conversion wei
 git clone https://github.com/your-org/comtrade-conversion-weights.git
 cd comtrade-conversion-weights
 poetry install && poetry shell
+cd generator
+module load matlab
 
 # Load Comtrade API key
 export COMTRADE_API_KEY="your_key_here"

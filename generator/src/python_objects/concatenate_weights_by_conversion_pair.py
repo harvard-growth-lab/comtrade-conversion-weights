@@ -46,6 +46,10 @@ class ConcatenateWeights(Base):
             self.final_optimized_weights_dir,
         ]:
             self.setup_paths(path)
+            
+        self.target_class_code = self.classification_translation_dict[self.target_class]
+        self.source_class_code = self.classification_translation_dict[self.source_class]
+
 
     def run(self):
         # for conversion_pair in self.conversion_years:
