@@ -81,7 +81,7 @@ class MatlabProgramRunner(Base):
         Runs the MATLAB optimization code to generate weights
         """
         script_dir = self.root_dir / "src" / "scripts"
-        bash_script = script_dir / "run_weight_optimization_generator.sh"
+        bash_script = script_dir / "run_matlab_optimization.sh"
 
         try:
             subprocess.run(
@@ -118,11 +118,6 @@ class MatlabProgramRunner(Base):
             self.logger.info(f"Output: {result.stdout}")
             if result.stderr:
                 self.logger.error("Errors:", result.stderr)
-
+                
         except subprocess.CalledProcessError as e:
-            error_msg = f"MATLAB optimization failed with return code {e.returncode}"
-            if e.stderr:
-                error_msg += f"\nError output: {e.stderr}"
-            if e.stdout:
-                error_msg += f"\nStandard output: {e.stdout}"
-            raise ValueError(error_msg)
+            logger.error(f"MATLAB optimization script error: {e}")

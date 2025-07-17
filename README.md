@@ -17,7 +17,7 @@ The above diagram breaks down the processing steps for generating conversion wei
 - Python 3.10+
 - [Poetry](https://python-poetry.org/docs/) for managing dependencies
 - [R](https://cran.rstudio.com/) (for product grouping) 
-- MATLAB (for optimization code)
+- MATLAB R2021a (for optimization code)
 - Premium UN Comtrade API key ([get one here](https://comtradeplus.un.org/))
 - Raw Comtrade data files (([download from comtrade-downloader](https://github.com/harvard-growth-lab/comtrade-downloader)))
 

@@ -1,11 +1,4 @@
 #!/bin/bash
-#SBATCH -p shared
-#SBATCH -t 0-12:00
-#SBATCH -c 4
-#SBATCH --mem=16G
-#SBATCH -o matlab_job_%j.out
-#SBATCH -e matlab_job_%j.err
-
 # Load MATLAB module
 # module load matlab/R2021a-fasrc01
 
