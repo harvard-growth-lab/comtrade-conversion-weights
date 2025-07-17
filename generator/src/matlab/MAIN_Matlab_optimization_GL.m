@@ -1,8 +1,8 @@
 % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
 % HS Conversion via Constrained OLS 
 
-Lukaszuk, P. & Torun, D. Harmonizing the Harmonized System SEPS Discussion Paper
-2022-12 (2022)
+% Lukaszuk, P. & Torun, D. Harmonizing the Harmonized System SEPS Discussion Paper
+% 2022-12 (2022)
 % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
 
 for group = groups
