@@ -215,7 +215,7 @@ for group = groups
     disp('Time used for optimization (in seconds):')
     disp(time_hes_con)
 
-    weights_dir = fullfile(current_dir, '..', '..', 'data', 'conversion_weights');
+    weights_dir = fullfile(pwd, 'data', 'conversion_weights');
     if ~exist(weights_dir, 'dir')
         mkdir(weights_dir);
     end

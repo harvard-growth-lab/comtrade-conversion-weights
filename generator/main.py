@@ -1,182 +1,105 @@
+import sys
+import os
 from src.python_objects.build_input_matrices import MatrixBuilder
-from src.python_objects.prep_for_pipeline import PipelineWeightPrep
+from src.python_objects.concatenate_weights_by_conversion_pair import ConcatenateWeights
+from src.python_objects.run_weight_optimizer import MatlabProgramRunner
+from src.python_objects.combine_correlation_tables import CombineCorrelationTables
+from src.utils import util
+from pathlib import Path
+import subprocess
+from user_config import get_enabled_conversions
+from user_config import (
+    COMBINE_CONCORDANCES,
+    CREATE_PRODUCT_GROUPS,
+    BUILD_INPUT_MATRICES,
+    GENERATE_WEIGHTS,
+    GROUP_WEIGHTS,
+)
+from src.python_objects.base import Base
+from tests.test import TestData
 
 
 def run():
-    # Combined data structure for all conversion pairs
-    conversion_pairs = [
-        {
-            'direction': 'backward',
-            'from_class': 'H1',
-            'to_class': 'H0',
-            'from_year': '1996',
-            'to_year': '1995',
-            'enabled': True
-        },
-        # Backward HS conversions
-        {
-            'direction': 'backward',
-            'from_class': 'H2',
-            'to_class': 'H1',
-            'from_year': '2002',
-            'to_year': '2001',
-            'enabled': False
-        },
-        {
-            'direction': 'backward',
-            'from_class': 'H3',
-            'to_class': 'H2',
-            'from_year': '2007',
-            'to_year': '2006',
-            'enabled': False
-        },
-        {
-            'direction': 'backward',
-            'from_class': 'H4',
-            'to_class': 'H3',
-            'from_year': '2012',
-            'to_year': '2011',
-            'enabled': False
-        },
-        {
-            'direction': 'backward',
-            'from_class': 'H5',
-            'to_class': 'H4',
-            'from_year': '2017',
-            'to_year': '2016',
-            'enabled': False
-        },
-        {
-            'direction': 'backward',
-            'from_class': 'H6',
-            'to_class': 'H5',
-            'from_year': '2022',
-            'to_year': '2021',
-            'enabled': False
-        },
-        # SITC conversions
-        {
-            'direction': 'backward',
-            'from_class': 'H0',
-            'to_class': 'S3',
-            'from_year': '1992',
-            'to_year': '1988',
-            'enabled': False
-        },
-        {
-            'direction': 'backward',
-            'from_class': 'S3',
-            'to_class': 'S2',
-            'from_year': '1988',
-            'to_year': '1987',
-            'enabled': False
-        },
-        {
-            'direction': 'backward',
-            'from_class': 'S2',
-            'to_class': 'S1',
-            'from_year': '1987',
-            'to_year': '1976',
-            'enabled': False
-        },
-        # Forward HS conversions
-        {
-            'direction': 'forward',
-            'from_class': 'H0',
-            'to_class': 'H1',
-            'from_year': '1995',
-            'to_year': '1996',
-            'enabled': False
-        },
-        {
-            'direction': 'forward',
-            'from_class': 'H1',
-            'to_class': 'H2',
-            'from_year': '2001',
-            'to_year': '2002',
-            'enabled': False
-        },
-        {
-            'direction': 'forward',
-            'from_class': 'H2',
-            'to_class': 'H3',
-            'from_year': '2006',
-            'to_year': '2007',
-            'enabled': False
-        },
-        {
-            'direction': 'forward',
-            'from_class': 'H3',
-            'to_class': 'H4',
-            'from_year': '2011',
-            'to_year': '2012',
-            'enabled': False
-        },
-        {
-            'direction': 'forward',
-            'from_class': 'H4',
-            'to_class': 'H5',
-            'from_year': '2016',
-            'to_year': '2017',
-            'enabled': False
-        },
-        {
-            'direction': 'forward',
-            'from_class': 'H5',
-            'to_class': 'H6',
-            'from_year': '2021',
-            'to_year': '2022',
-            'enabled': False
-        },
-        # Forward SITC conversions
-        {
-            'direction': 'forward',
-            'from_class': 'S3',
-            'to_class': 'H0',
-            'from_year': '1988',
-            'to_year': '1992',
-            'enabled': False
-        },
-        {
-            'direction': 'forward',
-            'from_class': 'S2',
-            'to_class': 'S3',
-            'from_year': '1987',
-            'to_year': '1988',
-            'enabled': False
-        },
-        {
-            'direction': 'forward',
-            'from_class': 'S1',
-            'to_class': 'S2',
-            'from_year': '1975',
-            'to_year': '1976',
-            'enabled': False
-        }
-    ]
+    """
+    Runs the main generator code.
 
-    # Filter enabled pairs for matrix building
-    weight_tables = [
-        (pair['direction'], pair['from_class'], pair['to_class'])
-        for pair in conversion_pairs
-        if pair['enabled']
-    ]
+    The generator code is a pipeline that:
+    1. Combines the correlation tables provided by Comtrade into a single file
+    2. Creates product groups based on the correlation tables
+    3. Builds input (trade in source classification, trade in
+        target classification, and correlation within group) matrices
+    4. Generates weights for the input matrices using a matlab optimization program
+    5. Groups the weights by start and end year pairs and saves the final weights
 
-    # Filter enabled pairs for pipeline preparation
-    conversion_years = [
-        (pair['from_class'], pair['from_year'], pair['to_class'], pair['to_year'])
-        for pair in conversion_pairs
-        if pair['enabled']
-    ]
+    The generator code is run in the following order:
+    1. CombineCorrelationTables
+    2. CreateProductGroups
+    3. BuildInputMatrices
+    4. GenerateWeights
+    5. GroupWeights
+    """
 
-    # Initialize and run matrix builder
-    # matrix_builder = MatrixBuilder(weight_tables)
-    # matrix_builder.run()
+    try:
+        conversion_weights_pairs = get_enabled_conversions()
+        base_obj = Base(conversion_weights_pairs)
+        logger = base_obj.logger
 
-    # Initialize and run pipeline weight preparation
-    pipeline_weight_prep = PipelineWeightPrep(conversion_years)
-    pipeline_weight_prep.run()
+        if COMBINE_CONCORDANCES:
+            # runs all correlation tables through the concatenation process
+            logger.info("Combine correlation tables")
+            CombineCorrelationTables().concatenate_tables_to_main()
 
+        if CREATE_PRODUCT_GROUPS:
+            logger.info("Creating product groups")
+            try:
+                result = subprocess.run(
+                    ["Rscript", "src/R_code/create_product_groups.R"],
+                    capture_output=True,
+                    check=True,
+                    text=True,
+                    env=dict(os.environ, R_QUIET="TRUE")
+                )
+                logger.info(result.stdout)
+            except subprocess.CalledProcessError as e:
+                logger.error(f"R script error: {e}")
+
+        if BUILD_INPUT_MATRICES:
+            # build source classification, target classification, and correlation matrices
+            logger.info("Building input matrices")
+            util.cleanup_input_matrices(base_obj)
+            for conversion_weight_pair in conversion_weights_pairs:
+                matrix_builder = MatrixBuilder(conversion_weight_pair)
+                matrix_builder.build()
+
+        if GENERATE_WEIGHTS:
+            logger.info("Generating weights")
+            # confirm complete matrices before running matlab optimization
+            test_data = TestData(base_obj.data_path, logger)
+            failed_tests = test_data.test_dimensions()
+            if failed_tests:
+                raise ValueError(f"Failed tests: {failed_tests}")
+
+            util.cleanup_weight_files(base_obj)
+            matlab_runner = MatlabProgramRunner()
+            matlab_runner.write_matlab_params()
+            matlab_runner.run_matlab_optimization()
+
+        if GROUP_WEIGHTS:
+            logger.info("Grouping weights by start and end year pairs")
+            for conversion_weights_pair in conversion_weights_pairs:
+                concatenate_obj = ConcatenateWeights(conversion_weights_pair)
+                concatenate_obj.run()
+
+    except ValueError as e:
+        print(f"Error: {e}")
+
+        if hasattr(e, "__cause__") and e.__cause__:
+            logger.debug(f"Root cause: {type(e.__cause__).__name__}: {e.__cause__}")
+
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -2,46 +2,30 @@
 ## Function to create Product Groups (i.e., identify product directly or indirectly linked by UN correspondence tables for a given HS vintage)
 ################################################################################
 
+user_lib <- Sys.getenv("R_LIBS_USER")
+if (!dir.exists(user_lib)) {
+  dir.create(user_lib, recursive = TRUE)
+}
+.libPaths(c(user_lib, .libPaths()))
 
-library(ggplot2)
-library(readxl)
-library(stringr)
-library(CVXR)
-library(openxlsx)
-library(Hmisc)
-library(expss)
-library(reshape2)
-library("R.matlab")
-library("matlabr")
-library(splitstackshape)
+install_if_missing <- function(package_name) {
+  if (!require(package_name, character.only = TRUE, quietly = TRUE)) {
+    install.packages(package_name, lib = user_lib, repos = "https://cran.rstudio.com/")
+    library(package_name, character.only = TRUE)
+  }
+}
+
+packages <- c("here", "data.table")
+
+for (pkg in packages) {
+  install_if_missing(pkg)
+}
 
 rm(list = ls())
 
-# Function to parse command line arguments
-parse_args <- function() {
-  args <- commandArgs(trailingOnly = TRUE)
-  if (length(args) < 2) {
-    stop("Two arguments required: 1) CSV file path containing the iterations dataframe, 2) working directory path")
-  }
-  iterations_file <- args[1]
-  working_dir <- args[2]
+# Set working directory
+setwd(here("generator"))
   
-  if (!file.exists(iterations_file)) {
-    stop(sprintf("File %s does not exist", iterations_file))
-  }
-  if (!dir.exists(working_dir)) {
-    stop(sprintf("Directory %s does not exist", working_dir))
-  }
-  
-  # Set working directory
-  setwd(working_dir)
-  
-  return(read.csv(iterations_file))
-}
-
-# Get iterations dataframe from command line
-iterations_df <- parse_args()
-
 ### The 'create.groups' function:
 create.groups=function(data ## Specify a two column dataframe with the code correspondences
                        # direct = direction
@@ -92,6 +76,18 @@ create.groups=function(data ## Specify a two column dataframe with the code corr
   
 }
 
+iterations_df <- data.frame(
+  from_year = c(
+    1996, 2002, 2007, 2012, 2017, 2022, 1992, 1996, 2002, 2007, 2012, 2017, 1962, 1976, 1992, 1988, 1988, 1976),
+  to_year = c(
+    1992, 1996, 2002, 2007, 2012, 2017, 1996, 2002, 2007, 2012, 2017, 2022, 1976, 1962, 1988, 1976, 1992, 1988),
+  source_classification = c(
+    "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS2022", "HS1992", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "SITC1", "SITC2", "HS1992", "SITC3", "SITC3", "SITC2"),
+  target_classification = c(
+    "HS1992", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS2022", "SITC2", "SITC1", "SITC3", "SITC2", "HS1992", "SITC3"),
+  stringsAsFactors = FALSE
+)
+
 for(i in 1:nrow(iterations_df)) {
   
   # Extract parameters for this iteration
@@ -112,8 +108,8 @@ for(i in 1:nrow(iterations_df)) {
   }
   
   ### Load all HS vintage correspondences:
-  all.vintages  <- read.csv("data/static/SITC_consolidated_comtrade_concordances.csv")
-  ## comtrade always provides concordance tables in later classification to earlier classification
+  all.vintages  <- read.csv("data/output/consolidated_correlation/consolidated_comtrade_correlation_tables.csv")
+  ## comtrade always provides correlation tables in later classification to earlier classification
   conversion <- subset(all.vintages, adjustment == sprintf("%s to %s", year_1, year_2))
   
   conversion$code.before = as.numeric(conversion$code.before)
@@ -140,9 +136,8 @@ for(i in 1:nrow(iterations_df)) {
     
   }
   
-  write.csv(conversion, file = sprintf("data/concordance_groups/from_%s_to_%s.csv", source_classification, target_classification), row.names=FALSE)
-
-  # Optional: Print status
-  cat("Completed conversion from", source_classification, "to", target_classification, "\n")
+  write.csv(conversion, file = sprintf("data/correlation_groups/from_%s_to_%s.csv", source_classification, target_classification), row.names=FALSE)
 }
+cat("Generated group assignments for all classifications, written to data/correlation_groups folder")
+
 
