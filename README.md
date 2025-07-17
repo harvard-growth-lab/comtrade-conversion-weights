@@ -131,6 +131,7 @@ Expects raw Comtrade data in this structure:
 Apache License, Version 2.0 - see LICENSE file.
 
 ## Citation
+[![DOI](https://zenodo.org/badge/987233396.svg)](https://doi.org/10.5281/zenodo.16051508)
 
 ```bibtex
 @Misc{comtrade_conversion_weights,
