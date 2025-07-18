@@ -1,3 +1,6 @@
+% Lukaszuk, P. & Torun, D. Harmonizing the Harmonized System SEPS Discussion Paper
+% 2022-12 (2022)
+
 function [f, g, H] = OLSobj(b,y,X,conversion_mat)
 % this function implements the OLS objective function in fmincon for the 
 % optimization problem (OLS) -> see main file constrained_OLS.m

@@ -118,6 +118,6 @@ class MatlabProgramRunner(Base):
             self.logger.info(f"Output: {result.stdout}")
             if result.stderr:
                 self.logger.error("Errors:", result.stderr)
-                
+
         except subprocess.CalledProcessError as e:
-            logger.error(f"MATLAB optimization script error: {e}")
+            self.logger.error(f"MATLAB optimization script error: {e}")

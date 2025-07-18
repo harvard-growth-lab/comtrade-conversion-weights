@@ -1,3 +1,6 @@
+% Lukaszuk, P. & Torun, D. Harmonizing the Harmonized System SEPS Discussion Paper
+% 2022-12 (2022)
+
 function [c,ceq,gc,gceq] = constraint(b,y,X)
 % this function implements the nonlinear constraint (nonlcon) in fmincon ->
 % inputs are b (the matrix of conversion weights, supplied by the

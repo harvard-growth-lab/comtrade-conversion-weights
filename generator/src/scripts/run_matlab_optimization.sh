@@ -1,6 +1,5 @@
 #!/bin/bash
 # Load MATLAB module
-# module load matlab/R2021a-fasrc01
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 LOGS_DIR="${SCRIPT_DIR}/../../logs/matlab_optimization"

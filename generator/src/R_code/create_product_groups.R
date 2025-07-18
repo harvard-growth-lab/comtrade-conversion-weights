@@ -1,6 +1,8 @@
 ################################################################################
 ## Function to create Product Groups (i.e., identify product directly or indirectly linked by UN correspondence tables for a given HS vintage)
 ################################################################################
+# % Lukaszuk, P. & Torun, D. Harmonizing the Harmonized System SEPS Discussion Paper
+# % 2022-12 (2022)
 
 user_lib <- Sys.getenv("R_LIBS_USER")
 if (!dir.exists(user_lib)) {

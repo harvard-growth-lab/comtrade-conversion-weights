@@ -1,3 +1,6 @@
+% Lukaszuk, P. & Torun, D. Harmonizing the Harmonized System SEPS Discussion Paper
+% 2022-12 (2022)
+
 function Hout = hessian_fct_con(b, lambda, y, X, country)
 % this function implements the Hessian in fmincon for the CONSTRAINED
 % optimization problem (OLS) -> see main file main_constrained_OLS.m
