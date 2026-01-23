@@ -152,22 +152,15 @@ class MatrixBuilder(Base):
             "SITC3",
         ]:
 
-            if self.source_class == "HS1992":
-                source_year = 1992
-                target_year = 1988
-            else:
-                source_year = 1988
-                target_year = 1992
-
             files_target = []
             files_source = []
             # HS to SITC conversions trade files are averaged over 3 years
             # this is to ensure all products are captured, a requirement for the optimization code
-            for year in range(target_year, target_year + self.AVERAGE_RANGE):
+            for year in range(self.target_year, self.target_year + self.AVERAGE_RANGE):
                 target_class_year_path = self.target_class_path / str(year)
                 files_target += target_class_year_path.glob("*.parquet")
 
-            for year in range(source_year - 1, source_year + (self.AVERAGE_RANGE - 1)):
+            for year in range(self.source_year - 1, self.source_year + (self.AVERAGE_RANGE - 1)):
                 source_class_year_path = self.source_class_path / str(year)
                 files_source += source_class_year_path.glob("*.parquet")
 

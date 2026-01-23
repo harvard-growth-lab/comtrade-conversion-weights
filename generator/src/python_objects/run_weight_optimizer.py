@@ -12,6 +12,8 @@ class MatlabProgramRunner(Base):
     def __init__(self, conversion_weights_pairs={}):
         super().__init__(conversion_weights_pairs={})
 
+        self.conversion_weights_pairs = conversion_weights_pairs
+
     def write_matlab_params(self) -> None:
         """
         Extracts the max number of groups for each year pair from the matrices
@@ -29,12 +31,24 @@ class MatlabProgramRunner(Base):
         end_years = []
         max_groups = []
 
+        selected_conversions = []
+        for self.conversion_weight_pair in self.conversion_weights_pairs:
+            self.source_class = self.conversion_weight_pair["source_class"]
+            self.target_class = self.conversion_weight_pair["target_class"]
+            self.direction = self.conversion_weight_pair["direction"]
+            self.get_source_and_target_years()
+            import pdb
+            pdb.set_trace()
+            selected_conversions.append((self.source_year, self.target_year))
+
         for (start, end), max_group in sorted(result.items()):
-            start_years.append(str(start))
-            end_years.append(str(end))
-            max_groups.append(
-                str(max_group)
-            )  # We'll convert these back to integers in the output
+            # only run weight optimization for the selected conversions in config file
+            if (start, end) in selected_conversions:
+                start_years.append(str(start))
+                end_years.append(str(end))
+                max_groups.append(
+                    str(max_group)
+                )  # We'll convert these back to integers in the output
 
         output_dir = self.data_path / "temp"
         os.makedirs(output_dir, exist_ok=True)

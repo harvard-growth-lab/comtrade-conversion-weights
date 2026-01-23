@@ -46,7 +46,7 @@ TOL=1e-20
 for i in "${!START_YEARS[@]}"; do
     log_message "Processing: Start year ${START_YEARS[i]}, End year ${END_YEARS[i]}, Max group ${MAX_GROUPS[i]}"
     
-    matlab -nosplash -nodesktop -r "start_year=${START_YEARS[i]}; end_year=${END_YEARS[i]}; groups=1:${MAX_GROUPS[i]}; tol=1e-20; diary('${LOGS_DIR}/matlab_output_${START_YEARS[i]}_${END_YEARS[i]}.log'); run('MAIN_Matlab_optimization_GL.m'); diary off; exit;" 2>&1 | tee -a "$LOG_FILE"
+    matlab -nosplash -nodesktop -batch "start_year=${START_YEARS[i]}; end_year=${END_YEARS[i]}; groups=1:${MAX_GROUPS[i]}; tol=1e-20; diary('${LOGS_DIR}/matlab_output_${START_YEARS[i]}_${END_YEARS[i]}.log'); run('MAIN_Matlab_optimization_GL.m'); diary off" 2>&1 | tee -a "$LOG_FILE"
     
     log_message "Completed run $((i+1))/${#START_YEARS[@]}"
     log_message "----------------------------------------"

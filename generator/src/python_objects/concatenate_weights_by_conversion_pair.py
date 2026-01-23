@@ -30,10 +30,11 @@ class ConcatenateWeights(Base):
 
     def __init__(self, conversion_weight_pair):
         super().__init__(conversion_weight_pair)
+        self.conversion_weight_pair = conversion_weight_pair
         self.source_class = conversion_weight_pair["source_class"]
-        self.start_year = conversion_weight_pair["source_year"]
+        # self.start_year = conversion_weight_pair["source_year"]
         self.target_class = conversion_weight_pair["target_class"]
-        self.end_year = conversion_weight_pair["target_year"]
+        # self.end_year = conversion_weight_pair["target_year"]
 
         self.matrices_dir = self.data_path / "matrices"
         self.groups_dir = self.data_path / "correlation_groups"
@@ -49,6 +50,7 @@ class ConcatenateWeights(Base):
             
         self.target_class_code = self.classification_translation_dict[self.target_class]
         self.source_class_code = self.classification_translation_dict[self.source_class]
+        self.get_source_and_target_years()
 
 
     def run(self):
@@ -60,6 +62,7 @@ class ConcatenateWeights(Base):
             detailed_product_level = self.HS_DETAIL_PRODUCT_CODE_LENGTH
         else:
             detailed_product_level = self.SITC_DETAIL_PRODUCT_CODE_LENGTH
+
 
         for file in results:
             mapped_conversion_weight_df = self.format_conversion_weight_file(
@@ -81,7 +84,7 @@ class ConcatenateWeights(Base):
         weights_dir = self.data_path / "conversion_weights"
         results = weights_dir.glob(
             self.CONVERSION_WEIGHT_FILENAME_PATTERN.format(
-                start=self.start_year, end=self.end_year
+                start=self.source_year, end=self.target_year
             )
         )
         if not results:
@@ -107,7 +110,7 @@ class ConcatenateWeights(Base):
         conversion_group = pd.read_csv(
             self.matrices_dir
             / self.CONVERSION_MATRIX_FILENAME_PATTERN.format(
-                start=self.start_year, end=self.end_year, group_id=group_id
+                start=self.source_year, end=self.target_year, group_id=group_id
             ),
             dtype={"code.source": str},
         )

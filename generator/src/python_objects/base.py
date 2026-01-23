@@ -133,3 +133,19 @@ class Base(object):
 
         save_path = save_dir / f"{table_name}.parquet"
         df.to_parquet(save_path, index=False)
+
+
+    def get_source_and_target_years(self) -> None:
+        """
+        Sets the source and target years for the conversion weight pair.
+        """
+
+        if self.conversion_weight_pair["direction"] == "backward":
+            # H1 => H0, source 1995 & target 1996
+            self.source_year = self.RELEASE_YEARS[self.source_class]
+            self.target_year = self.source_year - 1
+        else:
+            # forward direction example: H0 => H1, source 1995 & target 1996
+            self.target_year = self.RELEASE_YEARS[self.target_class]
+            self.source_year = self.target_year - 1
+

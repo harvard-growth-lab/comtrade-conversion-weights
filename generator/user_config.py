@@ -17,7 +17,7 @@ from src.config.source_target_pairs import SOURCE_TARGET_ENABLED_PAIRS
 
 # top file directory path data downloaded from comtrade
 RAW_DOWNLOADED_COMTRADE_DATA_PATH = (
-    # "/data/path/here"
+    "/n/hausmann_lab/lab/atlas/data/"
 )
 
 # =============================================================================
@@ -37,20 +37,19 @@ ENABLE_ALL_CONVERSIONS = False
 # optimized weights are provided in the comtrade-downloader as a static data input
 
 # BACKWARD HS CONVERSIONS (newer to older)
-CONVERT_HS96_TO_HS92 = True
+CONVERT_HS96_TO_HS92 = False
 CONVERT_HS02_TO_HS96 = False
 CONVERT_HS07_TO_HS02 = False
 CONVERT_HS12_TO_HS07 = False
 CONVERT_HS17_TO_HS12 = False
 CONVERT_HS22_TO_HS17 = False
 
-CONVERT_HS92_TO_SITC3 = False
+CONVERT_HS92_TO_SITC3 = True
 CONVERT_SITC2_TO_SITC1 = False
 CONVERT_SITC3_TO_SITC2 = False
 
 
 # FORWARD HS CONVERSIONS (older to newer)
-CONVERT_SITC3_TO_HS92 = False
 CONVERT_HS92_TO_HS96 = False
 CONVERT_HS96_TO_HS02 = False
 CONVERT_HS02_TO_HS07 = False
@@ -58,7 +57,7 @@ CONVERT_HS07_TO_HS12 = False
 CONVERT_HS12_TO_HS17 = False
 CONVERT_HS17_TO_HS22 = False
 
-CONVERT_HS92_TO_SITC3 = False
+CONVERT_SITC3_TO_HS92 = True
 CONVERT_SITC1_TO_SITC2 = False
 CONVERT_SITC2_TO_SITC3 = False
 
@@ -91,7 +90,6 @@ def get_enabled_conversions():
     enabled_pairs = []
 
     conversions = [
-        # Backward
         (CONVERT_SITC3_TO_HS92, "SITC3", "HS1992", "forward", "1988", "1992"),
         (CONVERT_SITC2_TO_SITC3, "SITC2", "SITC3", "forward", "1987", "1988"),
         (CONVERT_SITC1_TO_SITC2, "SITC1", "SITC2", "forward", "1975", "1976"),
@@ -101,7 +99,6 @@ def get_enabled_conversions():
         (CONVERT_HS12_TO_HS07, "HS2012", "HS2007", "backward", "2012", "2011"),
         (CONVERT_HS17_TO_HS12, "HS2017", "HS2012", "backward", "2017", "2016"),
         (CONVERT_HS22_TO_HS17, "HS2022", "HS2017", "backward", "2022", "2021"),
-        # Forward
         (CONVERT_HS92_TO_SITC3, "HS1992", "SITC3", "backward", "1992", "1988"),
         (CONVERT_SITC3_TO_SITC2, "SITC3", "SITC2", "backward", "1988", "1987"),
         (CONVERT_SITC2_TO_SITC1, "SITC2", "SITC1", "backward", "1987", "1976"),
