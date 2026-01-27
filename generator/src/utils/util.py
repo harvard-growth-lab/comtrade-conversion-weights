@@ -1,5 +1,5 @@
 import pandas as pd
-
+from src.python_objects.base import Base
 
 def clean_groups(groups, source_class, target_class):
     groups = groups.copy()
@@ -24,11 +24,45 @@ def clean_groups(groups, source_class, target_class):
 
 
 def get_detailed_product_level(classification):
-    if classification.startswith("H"):
+    # NAICS or HS Classification at 6 digit
+    if classification.startswith("H") or classification.startswith("N"):
         return 6
+    # SITC at 4 digit
     elif classification.startswith("S"):
         return 4
+    else:
+        raise ValueError(f"Unknown classification: {classification}")
 
+
+def format_product_code(df: pd.DataFrame, classification: str) -> str:
+    """
+    Format a product code appropriately for its classification.
+    Pads with zeros for Comtrade, no padding for NAICS.
+    """
+    if classification in Base.HAS_LEADING_ZEROS:
+        if Base.HAS_LEADING_ZEROS[classification]:
+            detail_level = Base.DETAIL_PRODUCT_CODE_LENGTH[classification]
+            return code.zfill(detail_level)
+        else:
+            return code  # NAICS - no padding
+    
+    # Fallback for short codes
+    if classification.startswith("N"):
+        return code
+    else:
+        detail_level = get_detailed_product_level(classification)
+        return code.zfill(detail_level)
+
+def get_classification_family(classification: str) -> str:
+    """Returns 'comtrade' or 'naics'"""
+    if classification in Base.CLASSIFICATION_FAMILIES:
+        return Base.CLASSIFICATION_FAMILIES[classification]
+    
+    # Fallback
+    if classification.startswith("N"):
+        return "naics"
+    else:
+        return "comtrade"
 
 def cleanup_files_from_dir(files):
     for file in files:

@@ -32,7 +32,7 @@ class CombineCorrelationTables(Base):
         dfs = []
 
         correlation_files = []
-        self.correlation_path = self.static_data_path / "comtrade_correlation_tables"
+        self.correlation_path = self.static_data_path / f"{self.data_source}_correlation_tables"
         for file_type in ["*.xls", "*.xlsx"]:
             correlation_files.extend(self.correlation_path.glob(file_type))
 

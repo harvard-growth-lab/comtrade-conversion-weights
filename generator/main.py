@@ -1,6 +1,6 @@
 import sys
 import os
-from src.python_objects.build_input_matrices import MatrixBuilder
+from src.python_objects.build_comtrade_input_matrices import MatrixBuilder as ComtradeMatrixBuilder
 from src.python_objects.concatenate_weights_by_conversion_pair import ConcatenateWeights
 from src.python_objects.run_weight_optimizer import MatlabProgramRunner
 from src.python_objects.combine_correlation_tables import CombineCorrelationTables
@@ -19,7 +19,7 @@ from src.python_objects.base import Base
 from tests.test import TestData
 
 
-def run():
+def run(data_source):
     """
     Runs the main generator code.
 
@@ -41,7 +41,7 @@ def run():
 
     try:
         conversion_weights_pairs = get_enabled_conversions()
-        base_obj = Base(conversion_weights_pairs)
+        base_obj = Base(conversion_weights_pairs, data_source)
         logger = base_obj.logger
 
         if COMBINE_CONCORDANCES:
@@ -64,12 +64,19 @@ def run():
                 logger.error(f"R script error: {e}")
 
         if BUILD_INPUT_MATRICES:
-            # build source classification, target classification, and correlation matrices
             logger.info("Building input matrices")
             util.cleanup_input_matrices(base_obj)
-            for conversion_weight_pair in conversion_weights_pairs:
-                matrix_builder = MatrixBuilder(conversion_weight_pair)
-                matrix_builder.build()
+            if data_source = "comtrade":
+                # build source classification, target classification, and correlation matrices
+                for conversion_weight_pair in conversion_weights_pairs:
+                    matrix_builder = ComtradeMatrixBuilder(conversion_weight_pair)
+                    matrix_builder.build()
+            if data_source = "naics":
+                for conversion_weight_pair in conversion_weights_pairs:
+                    matrix_builder = NAICSMatrixBuiler(conversion_weight_pair)
+                    matrix_builder.build()
+
+
 
         if GENERATE_WEIGHTS:
             logger.info("Generating weights")
@@ -103,4 +110,11 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, default="user_config")
+    args = parser.parse_args()
+    if args.config == "naics_user_config":
+        data_source = "naics"
+    else:
+        data_source = "comtrade"
+    run(data_source)

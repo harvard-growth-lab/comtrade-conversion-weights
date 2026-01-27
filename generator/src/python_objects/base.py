@@ -18,6 +18,16 @@ pd.set_option("max_colwidth", 400)
 
 
 class Base(object):
+
+
+    CLASSIFICATION_FAMILIES = {
+        "SITC1": "comtrade", "SITC2": "comtrade", "SITC3": "comtrade",
+        "HS1992": "comtrade", "HS1996": "comtrade", "HS2002": "comtrade",
+        "HS2007": "comtrade", "HS2012": "comtrade", "HS2017": "comtrade",
+        "HS2022": "comtrade",
+        "NAICS1997": "naics", "NAICS2002": "naics", "NAICS2007": "naics",
+        "NAICS2012": "naics", "NAICS2017": "naics", "NAICS2022": "naics",
+    }
     RELEASE_YEARS = {
         "SITC1": 1962,
         "SITC2": 1976,
@@ -29,7 +39,14 @@ class Base(object):
         "HS2012": 2012,
         "HS2017": 2017,
         "HS2022": 2022,
+        "NAICS1997": 1997,
+        "NAICS2002": 2002,
+        "NAICS2007": 2007,
+        "NAICS2012": 2012,
+        "NAICS2017": 2017,
+        "NAICS2022": 2022,
     }
+
 
     classification_translation_dict = {
         "SITC1": "S1",
@@ -42,13 +59,44 @@ class Base(object):
         "HS2012": "H4",
         "HS2017": "H5",
         "HS2022": "H6",
+        "NAICS1997": "NAICS1997",
+        "NAICS2002": "NAICS2002",
+        "NAICS2007": "NAICS2007",
+        "NAICS2012": "NAICS2012",
+        "NAICS2017": "NAICS2017",
+        "NAICS2022": "NAICS2022",
     }
+
+    DETAIL_PRODUCT_CODE_LENGTH = {
+        # Comtrade - SITC is 4, HS is 6
+        "SITC1": 4, "SITC2": 4, "SITC3": 4,
+        "HS1992": 6, "HS1996": 6, "HS2002": 6,
+        "HS2007": 6, "HS2012": 6, "HS2017": 6, "HS2022": 6,
+        # NAICS - always 6
+        "NAICS1997": 6, "NAICS2002": 6, "NAICS2007": 6,
+        "NAICS2012": 6, "NAICS2017": 6, "NAICS2022": 6,
+    }
+
+    HAS_LEADING_ZEROS = {
+        # Comtrade - yes
+        "SITC1": True, "SITC2": True, "SITC3": True,
+        "HS1992": True, "HS1996": True, "HS2002": True,
+        "HS2007": True, "HS2012": True, "HS2017": True, "HS2022": True,
+        # NAICS - no
+        "NAICS1997": False, "NAICS2002": False, "NAICS2007": False,
+        "NAICS2012": False, "NAICS2017": False, "NAICS2022": False,
+    }
+
+    # maintained for backwards compatibility
+    NAICS_DETAIL_PRODUCT_CODE_LENGTH = 6
     SITC_DETAIL_PRODUCT_CODE_LENGTH = 4
     HS_DETAIL_PRODUCT_CODE_LENGTH = 6
     SITC_YEAR_CUTOFF = 1988
 
-    def __init__(self, conversion_weights_pairs):
+
+    def __init__(self, conversion_weights_pairs, data_source):
         self.conversion_weights_pairs = conversion_weights_pairs
+        self.data_source = data_source if data_source is not None else "comtrade"
         self.root_dir = Path(__file__).parent.parent.parent.absolute()
         sys.path.insert(0, str(self.root_dir))
 

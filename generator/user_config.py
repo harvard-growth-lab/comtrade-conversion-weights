@@ -82,7 +82,6 @@ GROUP_WEIGHTS = True
 # SETUP
 # =============================================================================
 
-
 def get_enabled_conversions():
     """
     Returns a list of enabled conversion pairs based on the settings above.

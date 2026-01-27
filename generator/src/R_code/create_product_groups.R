@@ -78,6 +78,7 @@ create.groups=function(data ## Specify a two column dataframe with the code corr
   
 }
 
+
 iterations_df <- data.frame(
   from_year = c(
     1996, 2002, 2007, 2012, 2017, 2022, 1992, 1996, 2002, 2007, 2012, 2017, 1962, 1976, 1992, 1988, 1988, 1976),
