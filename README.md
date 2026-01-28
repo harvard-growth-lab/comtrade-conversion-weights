@@ -18,7 +18,7 @@ The diagram above illustrates the processing steps used to generate conversion w
 - [Poetry](https://python-poetry.org/docs/) for managing dependencies
 - [R](https://cran.rstudio.com/) for product grouping
 - MATLAB R2021a for optimization code
-- ([Premium UN Comtrade API key](https://comtradeplus.un.org/))
+- [Premium UN Comtrade API key](https://comtradeplus.un.org/)
 - Raw Comtrade data files (([download from comtrade-downloader](https://github.com/harvard-growth-lab/comtrade-downloader)))
 
 ### Installation
