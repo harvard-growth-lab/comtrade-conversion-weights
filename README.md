@@ -120,9 +120,9 @@ generator/
 Expects raw Comtrade data in this structure:
 ```
 /path/to/comtrade/data/as_reported/raw_parquet/
-├── H0/1992/COMTRADE-*.parquet
-├── H4/2012/COMTRADE-*.parquet
-├── S2/1976/COMTRADE-*.parquet
+├── H0/1992/COMTRADE-FINALCLASSIC-CA*H0[*].parquet
+├── H4/2012/COMTRADE-FINALCLASSIC-CA*H4[*].parquet
+├── S2/1976/COMTRADE-FINALCLASSIC-CA*S2[*].parquet
 └── ...
 ```
 
