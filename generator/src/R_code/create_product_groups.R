@@ -79,17 +79,26 @@ create.groups=function(data ## Specify a two column dataframe with the code corr
 }
 
 
+# iterations_df <- data.frame(
+#   from_year = c(
+#     1996, 2002, 2007, 2012, 2017, 2022, 1992, 1996, 2002, 2007, 2012, 2017, 1962, 1976, 1992, 1988, 1988, 1976),
+#   to_year = c(
+#     1992, 1996, 2002, 2007, 2012, 2017, 1996, 2002, 2007, 2012, 2017, 2022, 1976, 1962, 1988, 1976, 1992, 1988),
+#   source_classification = c(
+#     "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS2022", "HS1992", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "SITC1", "SITC2", "HS1992", "SITC3", "SITC3", "SITC2"),
+#   target_classification = c(
+#     "HS1992", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS2022", "SITC2", "SITC1", "SITC3", "SITC2", "HS1992", "SITC3"),
+#   stringsAsFactors = FALSE
+# )
+
 iterations_df <- data.frame(
-  from_year = c(
-    1996, 2002, 2007, 2012, 2017, 2022, 1992, 1996, 2002, 2007, 2012, 2017, 1962, 1976, 1992, 1988, 1988, 1976),
-  to_year = c(
-    1992, 1996, 2002, 2007, 2012, 2017, 1996, 2002, 2007, 2012, 2017, 2022, 1976, 1962, 1988, 1976, 1992, 1988),
-  source_classification = c(
-    "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS2022", "HS1992", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "SITC1", "SITC2", "HS1992", "SITC3", "SITC3", "SITC2"),
-  target_classification = c(
-    "HS1992", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS1996", "HS2002", "HS2007", "HS2012", "HS2017", "HS2022", "SITC2", "SITC1", "SITC3", "SITC2", "HS1992", "SITC3"),
+  from_year = c(2007),
+  to_year = c(2012),
+  source_classification = c("NAICS2007"),
+  target_classification = c("NAICS2012"),
   stringsAsFactors = FALSE
 )
+
 
 for(i in 1:nrow(iterations_df)) {
   
@@ -111,7 +120,9 @@ for(i in 1:nrow(iterations_df)) {
   }
   
   ### Load all HS vintage correspondences:
-  all.vintages  <- read.csv("data/output/consolidated_correlation/consolidated_comtrade_correlation_tables.csv")
+  all.vintages  <- read.csv("data/temp/naics_consolidated_concordance.csv")
+
+  # all.vintages  <- read.csv("data/output/consolidated_correlation/consolidated_comtrade_correlation_tables.csv")
   ## comtrade always provides correlation tables in later classification to earlier classification
   conversion <- subset(all.vintages, adjustment == sprintf("%s to %s", year_1, year_2))
   
