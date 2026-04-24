@@ -28,8 +28,8 @@ class ConcatenateWeights(Base):
     WEIGHT_FOR_N_TO_1_MAPPED_PRODUCTS = 1
     NO_WEIGHT = 0
 
-    def __init__(self, conversion_weight_pair):
-        super().__init__(conversion_weight_pair)
+    def __init__(self, conversion_weight_pair, data_source=None):
+        super().__init__(conversion_weight_pair, data_source=data_source)
         self.conversion_weight_pair = conversion_weight_pair
         self.source_class = conversion_weight_pair["source_class"]
         # self.start_year = conversion_weight_pair["source_year"]
@@ -47,10 +47,16 @@ class ConcatenateWeights(Base):
             self.final_optimized_weights_dir,
         ]:
             self.setup_paths(path)
-            
-        self.target_class_code = self.classification_translation_dict[self.target_class]
-        self.source_class_code = self.classification_translation_dict[self.source_class]
-        self.get_source_and_target_years()
+        if data_source == "comtrade":
+            self.target_class_code = self.classification_translation_dict[self.target_class]
+            self.source_class_code = self.classification_translation_dict[self.source_class]
+            self.get_source_and_target_years()
+        elif data_source == "naics":
+            self.source_year = conversion_weight_pair["source_year"]
+            self.target_year = conversion_weight_pair["target_year"]
+            self.target_class_code = self.classification_translation_dict[self.target_class]
+            self.source_class_code = self.classification_translation_dict[self.source_class]
+        
 
 
     def run(self):
@@ -157,7 +163,7 @@ class ConcatenateWeights(Base):
         # add back products that did not require optimization and thus never assigned a group id
         non_grouped_products = groups[groups["group.id"].isna()]
         non_grouped_products = clean_groups(
-            non_grouped_products, self.source_class, self.target_class
+            non_grouped_products, self.source_class, self.target_class, self.data_source
         )
 
         non_grouped_products = non_grouped_products[

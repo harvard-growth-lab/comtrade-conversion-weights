@@ -92,10 +92,10 @@ create.groups=function(data ## Specify a two column dataframe with the code corr
 # )
 
 iterations_df <- data.frame(
-  from_year = c(2007),
-  to_year = c(2012),
-  source_classification = c("NAICS2007"),
-  target_classification = c("NAICS2012"),
+  from_year = c(2012),# c(2007),
+  to_year = c(2007),# c(2012),
+  source_classification = c("NAICS2012"),# c("NAICS2007"),
+  target_classification = c("NAICS2007"),# c("NAICS2012"),
   stringsAsFactors = FALSE
 )
 
@@ -120,7 +120,7 @@ for(i in 1:nrow(iterations_df)) {
   }
   
   ### Load all HS vintage correspondences:
-  all.vintages  <- read.csv("data/temp/naics_consolidated_concordance.csv")
+  all.vintages  <- read.csv("data/output/consolidated_correlation/consolidated_naics_correlation_tables.csv")
 
   # all.vintages  <- read.csv("data/output/consolidated_correlation/consolidated_comtrade_correlation_tables.csv")
   ## comtrade always provides correlation tables in later classification to earlier classification

@@ -22,7 +22,7 @@ class MatrixBuilder(Base):
 
     def __init__(self, conversion_weights_pair):
 
-        super().__init__(conversion_weights_pair)
+        super().__init__(conversion_weights_pair, data_source="comtrade")
         self.downloaded_comtrade_data_path = Path(
             self.downloaded_comtrade_data_path / "as_reported"
         )
@@ -82,6 +82,8 @@ class MatrixBuilder(Base):
         groups = self.get_combined_correlation_file()
         # extract products that are not grouped all 1:1 and some N:1 relationships
         grouped_products = self.filter_for_only_grouped_products(groups)
+
+        import pdb; pdb.set_trace()
 
         target_dfs = self.prep_trade_dataframes(
             "target",
@@ -511,6 +513,7 @@ class MatrixBuilder(Base):
         return df[df.reporterCode.isin(reporters)]
 
     def country_by_prod_trade(self, df, groups, classification_type, prod_class):
+        import pdb; pdb.set_trace()
         dfs = {}
         for group_id in groups["group.id"].unique():
             group = groups[groups["group.id"] == group_id].copy()

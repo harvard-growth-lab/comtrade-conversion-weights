@@ -59,12 +59,12 @@ class Base(object):
         "HS2012": "H4",
         "HS2017": "H5",
         "HS2022": "H6",
-        "NAICS1997": "NAICS1997",
-        "NAICS2002": "NAICS2002",
-        "NAICS2007": "NAICS2007",
-        "NAICS2012": "NAICS2012",
-        "NAICS2017": "NAICS2017",
-        "NAICS2022": "NAICS2022",
+        "NAICS1997": "naics1997",
+        "NAICS2002": "naics2002",
+        "NAICS2007": "naics2007",
+        "NAICS2012": "naics2012",
+        "NAICS2017": "naics2017",
+        "NAICS2022": "naics2022",
     }
 
     DETAIL_PRODUCT_CODE_LENGTH = {
@@ -97,7 +97,11 @@ class Base(object):
     def __init__(self, conversion_weights_pairs, data_source):
         self.conversion_weights_pairs = conversion_weights_pairs
         self.data_source = data_source if data_source is not None else "comtrade"
-        self.root_dir = Path(__file__).parent.parent.parent.absolute()
+        try:
+            self.root_dir = Path(__file__).parent.parent.parent.absolute()
+        except NameError:
+            # Running in a notebook/interactive session
+            self.root_dir = Path(os.getcwd())
         sys.path.insert(0, str(self.root_dir))
 
         # PATHS

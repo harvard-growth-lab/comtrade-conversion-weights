@@ -1,11 +1,13 @@
 import sys
 import os
 from src.python_objects.build_comtrade_input_matrices import MatrixBuilder as ComtradeMatrixBuilder
+from src.python_objects.build_naics_input_matrices import NAICSMatrixBuilder
 from src.python_objects.concatenate_weights_by_conversion_pair import ConcatenateWeights
 from src.python_objects.run_weight_optimizer import MatlabProgramRunner
 from src.python_objects.combine_correlation_tables import CombineCorrelationTables
 from src.utils import util
 from pathlib import Path
+import argparse
 import subprocess
 from user_config import get_enabled_conversions
 from user_config import (
@@ -17,6 +19,7 @@ from user_config import (
 )
 from src.python_objects.base import Base
 from tests.test import TestData
+from prep_naics.naics_ingest import NaicsIngest
 
 
 def run(data_source):
@@ -47,7 +50,12 @@ def run(data_source):
         if COMBINE_CONCORDANCES:
             # runs all correlation tables through the concatenation process
             logger.info("Combine correlation tables")
-            CombineCorrelationTables().concatenate_tables_to_main()
+            if data_source == "comtrade":
+                CombineCorrelationTables(data_source=data_source).concatenate_tables_to_main()
+            elif data_source == "naics":
+                for conversion_weights_pair in conversion_weights_pairs:
+                    NaicsIngest(conversion_weights_pair['source_year'], conversion_weights_pair['target_year']).ingest_correlation_tables()
+                
 
         if CREATE_PRODUCT_GROUPS:
             logger.info("Creating product groups")
@@ -66,14 +74,14 @@ def run(data_source):
         if BUILD_INPUT_MATRICES:
             logger.info("Building input matrices")
             util.cleanup_input_matrices(base_obj)
-            if data_source = "comtrade":
+            if data_source == "comtrade":
                 # build source classification, target classification, and correlation matrices
                 for conversion_weight_pair in conversion_weights_pairs:
                     matrix_builder = ComtradeMatrixBuilder(conversion_weight_pair)
                     matrix_builder.build()
-            if data_source = "naics":
+            if data_source == "naics":
                 for conversion_weight_pair in conversion_weights_pairs:
-                    matrix_builder = NAICSMatrixBuiler(conversion_weight_pair)
+                    matrix_builder = NAICSMatrixBuilder(conversion_weight_pair)
                     matrix_builder.build()
 
 
@@ -94,7 +102,7 @@ def run(data_source):
         if GROUP_WEIGHTS:
             logger.info("Grouping weights by start and end year pairs")
             for conversion_weights_pair in conversion_weights_pairs:
-                concatenate_obj = ConcatenateWeights(conversion_weights_pair)
+                concatenate_obj = ConcatenateWeights(conversion_weights_pair, "naics")
                 concatenate_obj.run()
 
     except ValueError as e:
@@ -113,7 +121,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="user_config")
     args = parser.parse_args()
-    if args.config == "naics_user_config":
+    if args.config == "naics":
         data_source = "naics"
     else:
         data_source = "comtrade"

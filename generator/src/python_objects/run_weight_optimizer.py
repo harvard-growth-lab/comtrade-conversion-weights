@@ -9,8 +9,8 @@ import subprocess
 
 
 class MatlabProgramRunner(Base):
-    def __init__(self, conversion_weights_pairs={}):
-        super().__init__(conversion_weights_pairs={})
+    def __init__(self, conversion_weights_pairs={}, data_source=None):
+        super().__init__(conversion_weights_pairs={}, data_source=data_source)
 
         self.conversion_weights_pairs = conversion_weights_pairs
 
@@ -24,7 +24,7 @@ class MatlabProgramRunner(Base):
         """
         matrices_dir = self.data_path / "matrices"
         files = matrices_dir.glob("*.csv")
-
+        import pdb; pdb.set_trace()
         result = self.extract_max_groups(files)
 
         start_years = []
@@ -36,9 +36,11 @@ class MatlabProgramRunner(Base):
             self.source_class = self.conversion_weight_pair["source_class"]
             self.target_class = self.conversion_weight_pair["target_class"]
             self.direction = self.conversion_weight_pair["direction"]
-            self.get_source_and_target_years()
-            import pdb
-            pdb.set_trace()
+            if self.data_source == "comtrade":
+                self.get_source_and_target_years()
+            elif self.data_source == "naics":
+                self.source_year = self.conversion_weight_pair['source_year']
+                self.target_year =  self.conversion_weight_pair['target_year']
             selected_conversions.append((self.source_year, self.target_year))
 
         for (start, end), max_group in sorted(result.items()):

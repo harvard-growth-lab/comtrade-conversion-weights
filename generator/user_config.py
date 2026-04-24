@@ -36,7 +36,7 @@ ENABLE_ALL_CONVERSIONS = False
 
 # optimized weights are provided in the comtrade-downloader as a static data input
 
-# BACKWARD HS CONVERSIONS (newer to older)
+# BACKWARD HS CONVERSIONS COMTRADE (newer to older)
 CONVERT_HS96_TO_HS92 = False
 CONVERT_HS02_TO_HS96 = False
 CONVERT_HS07_TO_HS02 = False
@@ -44,12 +44,12 @@ CONVERT_HS12_TO_HS07 = False
 CONVERT_HS17_TO_HS12 = False
 CONVERT_HS22_TO_HS17 = False
 
-CONVERT_HS92_TO_SITC3 = True
+CONVERT_HS92_TO_SITC3 = False
 CONVERT_SITC2_TO_SITC1 = False
 CONVERT_SITC3_TO_SITC2 = False
 
 
-# FORWARD HS CONVERSIONS (older to newer)
+# FORWARD HS CONVERSIONS COMTRADE (older to newer)
 CONVERT_HS92_TO_HS96 = False
 CONVERT_HS96_TO_HS02 = False
 CONVERT_HS02_TO_HS07 = False
@@ -57,9 +57,13 @@ CONVERT_HS07_TO_HS12 = False
 CONVERT_HS12_TO_HS17 = False
 CONVERT_HS17_TO_HS22 = False
 
-CONVERT_SITC3_TO_HS92 = True
+CONVERT_SITC3_TO_HS92 = False
 CONVERT_SITC1_TO_SITC2 = False
 CONVERT_SITC2_TO_SITC3 = False
+
+# NAICS
+CONVERT_NAICS2007_TO_NAICS2012 = False
+CONVERT_NAICS2012_TO_NAICS2007 = True
 
 
 # =============================================================================
@@ -107,6 +111,8 @@ def get_enabled_conversions():
         (CONVERT_HS07_TO_HS12, "HS2007", "HS2012", "forward", "2011", "2012"),
         (CONVERT_HS12_TO_HS17, "HS2012", "HS2017", "forward", "2016", "2017"),
         (CONVERT_HS17_TO_HS22, "HS2017", "HS2022", "forward", "2021", "2022"),
+        (CONVERT_NAICS2012_TO_NAICS2007, "NAICS2012", "NAICS2007", "backward", "2012", "2007"),
+        (CONVERT_NAICS2007_TO_NAICS2012,"NAICS2007", "NAICS2012", "forward", "2007", "2012"),
     ]
 
     if ENABLE_ALL_CONVERSIONS:

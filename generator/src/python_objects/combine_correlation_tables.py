@@ -18,8 +18,8 @@ class CombineCorrelationTables(Base):
 
     MAX_TRUNCATION_ATTEMPTS = 4
 
-    def __init__(self, conversion_weights_pairs={}):
-        super().__init__(conversion_weights_pairs={})
+    def __init__(self, conversion_weights_pairs={}, data_source="naics"):
+        super().__init__(conversion_weights_pairs={}, data_source=data_source)
 
     def concatenate_tables_to_main(self):
         """
@@ -46,7 +46,7 @@ class CombineCorrelationTables(Base):
         consolidated_correlation_path.mkdir(exist_ok=True)
         consolidated_df.to_csv(
             consolidated_correlation_path
-            / "consolidated_comtrade_correlation_tables.csv",
+            / f"consolidated_{self.data_source}_correlation_tables.csv",
             index=False,
         )
 
