@@ -154,4 +154,7 @@ for(i in 1:nrow(iterations_df)) {
 }
 cat("Generated group assignments for all classifications, written to data/correlation_groups folder")
 
+cat(source_classification)
+cat(target_classification)
+
 

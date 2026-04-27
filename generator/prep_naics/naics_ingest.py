@@ -48,7 +48,6 @@ class NaicsIngest(Base):
         df["adjustment"] = f"{newer_vintage} to {older_vintage}"        
         df =  df[["code.after", "code.before", "Relationship", "adjustment"]]
         consolidated_correlation_path = self.output_path / "consolidated_correlation"
-        import pdb; pdb.set_trace()
         df.to_csv(
             consolidated_correlation_path
             / f"consolidated_{self.data_source}_correlation_tables.csv",

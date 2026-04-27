@@ -66,9 +66,9 @@ LOG_LEVEL = "INFO"
 
 COMBINE_CONCORDANCES = True
 CREATE_PRODUCT_GROUPS = True
-BUILD_INPUT_MATRICES = True
-GENERATE_WEIGHTS = True
-GROUP_WEIGHTS = True
+BUILD_INPUT_MATRICES = False
+GENERATE_WEIGHTS = False
+GROUP_WEIGHTS = False
 
 # =============================================================================
 # SETUP
@@ -93,7 +93,7 @@ def get_enabled_conversions():
         (CONVERT_NAICS2007_TO_NAICS2012, "NAICS2007", "NAICS2012", "forward", "2007", "2012"),
         (CONVERT_NAICS2002_TO_NAICS2007, "NAICS2002", "NAICS2007", "forward", "2002", "2007"),
         (CONVERT_NAICS1997_TO_NAICS2002, "NAICS1997", "NAICS2002", "forward", "1997", "2002"),
-        (CONVERT_SIC1987_TO_NAICS1997, "SIC1987", "NAICS1997", "forward", "1987", "1997"),
+        # (CONVERT_SITC1987_TO_NAICS1997, "SIC1987", "NAICS1997", "forward", "1987", "1997"),
     ]
 
     if ENABLE_ALL_CONVERSIONS:

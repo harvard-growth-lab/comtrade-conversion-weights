@@ -1,5 +1,5 @@
 import sys
-import os
+from src.python_objects.create_product_groups import CreateProductGroups
 from src.python_objects.build_comtrade_input_matrices import MatrixBuilder as ComtradeMatrixBuilder
 from src.python_objects.build_naics_input_matrices import NAICSMatrixBuilder
 from src.python_objects.concatenate_weights_by_conversion_pair import ConcatenateWeights
@@ -8,7 +8,6 @@ from src.python_objects.combine_correlation_tables import CombineCorrelationTabl
 from src.utils import util
 from pathlib import Path
 import argparse
-import subprocess
 from user_config import get_enabled_conversions
 from user_config import (
     COMBINE_CONCORDANCES,
@@ -59,17 +58,12 @@ def run(data_source):
 
         if CREATE_PRODUCT_GROUPS:
             logger.info("Creating product groups")
-            try:
-                result = subprocess.run(
-                    ["Rscript", "src/R_code/create_product_groups.R"],
-                    capture_output=True,
-                    check=True,
-                    text=True,
-                    env=dict(os.environ, R_QUIET="TRUE")
-                )
-                logger.info(result.stdout)
-            except subprocess.CalledProcessError as e:
-                logger.error(f"R script error: {e}")
+            cpg = CreateProductGroups(
+                conversion_weights_pairs=conversion_weights_pairs,
+                data_source=data_source,
+                root_dir=base_obj.root_dir,
+            )
+            cpg.run()
 
         if BUILD_INPUT_MATRICES:
             logger.info("Building input matrices")
