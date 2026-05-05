@@ -33,19 +33,8 @@ class NAICSMatrixBuilder(Base):
         self.conversion_weight_pair = conversion_weights_pair
         self.source_class = conversion_weights_pair["source_class"]
         self.target_class = conversion_weights_pair["target_class"]
-        # self.target_class_code = self.classification_translation_dict[self.target_class]
-        # self.source_class_code = self.classification_translation_dict[self.source_class]
-        # self.target_class_path = (
-        #     self.downloaded_comtrade_parquet_path / self.target_class_code
-        # )
-        # self.source_class_path = (
-        #     self.downloaded_comtrade_parquet_path / self.source_class_code
-        # )
-        # self.aggregated_by_year_not_converted_path = Path(
-        #     self.downloaded_comtrade_data_path
-        #     / "aggregated_by_year_not_converted"
-        #     / "parquet"
-        # )
+        self.source_year = conversion_weights_pair["source_year"]
+        self.target_year = conversion_weights_pair["target_year"]
 
         self.correlation_groups_path = self.data_path / "correlation_groups"
         self.setup_paths(self.correlation_groups_path)
@@ -55,8 +44,6 @@ class NAICSMatrixBuilder(Base):
         generates conversion and trade values matrices that is
         ready for matlab code to generate conversion weights
         """
-        self.source_year = "2012"
-        self.target_year = "2007"
         target_file = self.get_reported_data(self.target_year)
         source_file = self.get_reported_data(self.source_year)
         groups = self.get_combined_correlation_file()
@@ -89,12 +76,13 @@ class NAICSMatrixBuilder(Base):
         )
 
     def get_reported_data(self, year):
-        """
-        """
+        """ """
         # temp file
-        df = pd.read_stata(f"data/temp/naics_{int(self.source_year)}_{int(self.target_year)}.dta")
-        df = df[[f'naics{year}', f'emp{year}']]
-        df['reporter'] = "USA"
+        df = pd.read_stata(
+            f"data/temp/naics_{int(self.source_year)}_{int(self.target_year)}.dta"
+        )
+        df = df[[f"naics{year}", f"emp{year}"]]
+        df["reporter"] = "USA"
         return df
 
     def country_by_prod_trade(self, df, groups, classification_type, prod_class):
@@ -118,12 +106,12 @@ class NAICSMatrixBuilder(Base):
                     raise ValueError("no product codes matched reported data")
 
             pivot_df = filtered_df.pivot_table(
-                values=f"emp{prod_class}", index="reporter", columns=f"naics{prod_class}"
+                values=f"emp{prod_class}",
+                index="reporter",
+                columns=f"naics{prod_class}",
             )
             dfs[group_id] = pivot_df
         return dfs
-
-
 
     def get_combined_correlation_file(self) -> pd.DataFrame:
         """
@@ -211,7 +199,6 @@ class NAICSMatrixBuilder(Base):
                 / "matrices"
                 / f"{table}.matrix.start.{source_year}.end.{target_year}.group.{group_id}.csv"
             )
-
 
     def conversion_matrix(self, groups):
         # by group

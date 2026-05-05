@@ -17,8 +17,16 @@ from src.config.source_target_pairs import SOURCE_TARGET_ENABLED_PAIRS
 
 # top file directory path data downloaded from comtrade
 RAW_DOWNLOADED_COMTRADE_DATA_PATH = (
-    "/n/hausmann_lab/lab/atlas/data/"
+    "/Users/ELJ479/projects/weights_generator/generator/data/"
 )
+# "/n/hausmann_lab/lab/atlas/data/"
+
+
+# =============================================================================
+# SOURCE
+# =============================================================================
+
+SOURCE = "naics"  # comtrade
 
 # =============================================================================
 # BULK ENABLE/DISABLE SETTINGS
@@ -62,8 +70,22 @@ CONVERT_SITC1_TO_SITC2 = False
 CONVERT_SITC2_TO_SITC3 = False
 
 # NAICS
-CONVERT_NAICS2007_TO_NAICS2012 = False
+
+# BACKWARDS NAICS CONVERSIONS (newer to older)
+CONVERT_NAICS2022_TO_NAICS2017 = False
+CONVERT_NAICS2017_TO_NAICS2012 = True
 CONVERT_NAICS2012_TO_NAICS2007 = True
+CONVERT_NAICS2007_TO_NAICS2002 = True
+CONVERT_NAICS2002_TO_NAICS1997 = True
+CONVERT_NAICS1997_TO_SIC1987 = False
+
+
+# FORWARD NAICS CONVERSIONS (older to newer)
+CONVERT_NAICS1997_TO_NAICS2002 = False
+CONVERT_NAICS2002_TO_NAICS2007 = False
+CONVERT_NAICS2007_TO_NAICS2012 = False
+CONVERT_NAICS2012_TO_NAICS2017 = False
+CONVERT_NAICS2017_TO_NAICS2022 = False
 
 
 # =============================================================================
@@ -86,34 +108,128 @@ GROUP_WEIGHTS = True
 # SETUP
 # =============================================================================
 
-def get_enabled_conversions():
+
+def get_enabled_conversions(SOURCE="NAICS"):
     """
     Returns a list of enabled conversion pairs based on the settings above.
     """
     enabled_pairs = []
 
-    conversions = [
-        (CONVERT_SITC3_TO_HS92, "SITC3", "HS1992", "forward", "1988", "1992"),
-        (CONVERT_SITC2_TO_SITC3, "SITC2", "SITC3", "forward", "1987", "1988"),
-        (CONVERT_SITC1_TO_SITC2, "SITC1", "SITC2", "forward", "1975", "1976"),
-        (CONVERT_HS96_TO_HS92, "HS1996", "HS1992", "backward", "1996", "1995"),
-        (CONVERT_HS02_TO_HS96, "HS2002", "HS1996", "backward", "2002", "2001"),
-        (CONVERT_HS07_TO_HS02, "HS2007", "HS2002", "backward", "2007", "2006"),
-        (CONVERT_HS12_TO_HS07, "HS2012", "HS2007", "backward", "2012", "2011"),
-        (CONVERT_HS17_TO_HS12, "HS2017", "HS2012", "backward", "2017", "2016"),
-        (CONVERT_HS22_TO_HS17, "HS2022", "HS2017", "backward", "2022", "2021"),
-        (CONVERT_HS92_TO_SITC3, "HS1992", "SITC3", "backward", "1992", "1988"),
-        (CONVERT_SITC3_TO_SITC2, "SITC3", "SITC2", "backward", "1988", "1987"),
-        (CONVERT_SITC2_TO_SITC1, "SITC2", "SITC1", "backward", "1987", "1976"),
-        (CONVERT_HS92_TO_HS96, "HS1992", "HS1996", "forward", "1995", "1996"),
-        (CONVERT_HS96_TO_HS02, "HS1996", "HS2002", "forward", "2001", "2002"),
-        (CONVERT_HS02_TO_HS07, "HS2002", "HS2007", "forward", "2006", "2007"),
-        (CONVERT_HS07_TO_HS12, "HS2007", "HS2012", "forward", "2011", "2012"),
-        (CONVERT_HS12_TO_HS17, "HS2012", "HS2017", "forward", "2016", "2017"),
-        (CONVERT_HS17_TO_HS22, "HS2017", "HS2022", "forward", "2021", "2022"),
-        (CONVERT_NAICS2012_TO_NAICS2007, "NAICS2012", "NAICS2007", "backward", "2012", "2007"),
-        (CONVERT_NAICS2007_TO_NAICS2012,"NAICS2007", "NAICS2012", "forward", "2007", "2012"),
-    ]
+    if SOURCE == "HS":
+
+        conversions = [
+            (CONVERT_SITC3_TO_HS92, "SITC3", "HS1992", "forward", "1988", "1992"),
+            (CONVERT_SITC2_TO_SITC3, "SITC2", "SITC3", "forward", "1987", "1988"),
+            (CONVERT_SITC1_TO_SITC2, "SITC1", "SITC2", "forward", "1975", "1976"),
+            (CONVERT_HS96_TO_HS92, "HS1996", "HS1992", "backward", "1996", "1995"),
+            (CONVERT_HS02_TO_HS96, "HS2002", "HS1996", "backward", "2002", "2001"),
+            (CONVERT_HS07_TO_HS02, "HS2007", "HS2002", "backward", "2007", "2006"),
+            (CONVERT_HS12_TO_HS07, "HS2012", "HS2007", "backward", "2012", "2011"),
+            (CONVERT_HS17_TO_HS12, "HS2017", "HS2012", "backward", "2017", "2016"),
+            (CONVERT_HS22_TO_HS17, "HS2022", "HS2017", "backward", "2022", "2021"),
+            (CONVERT_HS92_TO_SITC3, "HS1992", "SITC3", "backward", "1992", "1988"),
+            (CONVERT_SITC3_TO_SITC2, "SITC3", "SITC2", "backward", "1988", "1987"),
+            (CONVERT_SITC2_TO_SITC1, "SITC2", "SITC1", "backward", "1987", "1976"),
+            (CONVERT_HS92_TO_HS96, "HS1992", "HS1996", "forward", "1995", "1996"),
+            (CONVERT_HS96_TO_HS02, "HS1996", "HS2002", "forward", "2001", "2002"),
+            (CONVERT_HS02_TO_HS07, "HS2002", "HS2007", "forward", "2006", "2007"),
+            (CONVERT_HS07_TO_HS12, "HS2007", "HS2012", "forward", "2011", "2012"),
+            (CONVERT_HS12_TO_HS17, "HS2012", "HS2017", "forward", "2016", "2017"),
+            (CONVERT_HS17_TO_HS22, "HS2017", "HS2022", "forward", "2021", "2022"),
+        ]
+    if SOURCE == "NAICS":
+
+        conversions = [
+            (
+                CONVERT_NAICS2022_TO_NAICS2017,
+                "NAICS2022",
+                "NAICS2017",
+                "backward",
+                "2022",
+                "2017",
+            ),
+            (
+                CONVERT_NAICS2017_TO_NAICS2012,
+                "NAICS2017",
+                "NAICS2012",
+                "backward",
+                "2017",
+                "2012",
+            ),
+            (
+                CONVERT_NAICS2012_TO_NAICS2007,
+                "NAICS2012",
+                "NAICS2007",
+                "backward",
+                "2012",
+                "2007",
+            ),
+            (
+                CONVERT_NAICS2007_TO_NAICS2002,
+                "NAICS2007",
+                "NAICS2002",
+                "backward",
+                "2007",
+                "2002",
+            ),
+            (
+                CONVERT_NAICS2002_TO_NAICS1997,
+                "NAICS2002",
+                "NAICS1997",
+                "backward",
+                "2002",
+                "1997",
+            ),
+            (
+                CONVERT_NAICS1997_TO_SIC1987,
+                "NAICS1997",
+                "SIC1987",
+                "backward",
+                "1997",
+                "1987",
+            ),
+            (
+                CONVERT_NAICS2017_TO_NAICS2022,
+                "NAICS2017",
+                "NAICS2022",
+                "forward",
+                "2017",
+                "2022",
+            ),
+            (
+                CONVERT_NAICS2012_TO_NAICS2017,
+                "NAICS2012",
+                "NAICS2017",
+                "forward",
+                "2012",
+                "2017",
+            ),
+            (
+                CONVERT_NAICS2007_TO_NAICS2012,
+                "NAICS2007",
+                "NAICS2012",
+                "forward",
+                "2007",
+                "2012",
+            ),
+            (
+                CONVERT_NAICS2002_TO_NAICS2007,
+                "NAICS2002",
+                "NAICS2007",
+                "forward",
+                "2002",
+                "2007",
+            ),
+            (
+                CONVERT_NAICS1997_TO_NAICS2002,
+                "NAICS1997",
+                "NAICS2002",
+                "forward",
+                "1997",
+                "2002",
+            ),
+            # (CONVERT_SITC1987_TO_NAICS1997, "SIC1987", "NAICS1997", "forward", "1987", "1997"),
+        ]
 
     if ENABLE_ALL_CONVERSIONS:
         for enabled, source, target, direction, source_year, target_year in conversions:

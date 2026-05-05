@@ -154,7 +154,7 @@ SOURCE_TARGET_ENABLED_PAIRS = [
         "target_class": "NAICS2002",
         "source_year": "1997",
         "target_year": "2002",
-        "enabled": False,
+        "enabled": True,
     },
     {
         "direction": "forward",
@@ -162,7 +162,7 @@ SOURCE_TARGET_ENABLED_PAIRS = [
         "target_class": "NAICS2007",
         "source_year": "2002",
         "target_year": "2007",
-        "enabled": False,
+        "enabled": True,
     },
     {
         "direction": "forward",
@@ -170,7 +170,7 @@ SOURCE_TARGET_ENABLED_PAIRS = [
         "target_class": "NAICS2012",
         "source_year": "2007",
         "target_year": "2012",
-        "enabled": False,
+        "enabled": True,
     },
     {
         "direction": "forward",
@@ -178,7 +178,7 @@ SOURCE_TARGET_ENABLED_PAIRS = [
         "target_class": "NAICS2017",
         "source_year": "2012",
         "target_year": "2017",
-        "enabled": False,
+        "enabled": True,
     },
     {
         "direction": "forward",
@@ -203,7 +203,7 @@ SOURCE_TARGET_ENABLED_PAIRS = [
         "target_class": "NAICS2012",
         "source_year": "2017",
         "target_year": "2012",
-        "enabled": False,
+        "enabled": True,
     },
     {
         "direction": "backward",
@@ -211,7 +211,7 @@ SOURCE_TARGET_ENABLED_PAIRS = [
         "target_class": "NAICS2007",
         "source_year": "2012",
         "target_year": "2007",
-        "enabled": False,
+        "enabled": True,
     },
     {
         "direction": "backward",
@@ -219,7 +219,7 @@ SOURCE_TARGET_ENABLED_PAIRS = [
         "target_class": "NAICS2007",
         "source_year": "2012",
         "target_year": "2007",
-        "enabled": False,
+        "enabled": True,
     },
     {
         "direction": "backward",
@@ -227,7 +227,7 @@ SOURCE_TARGET_ENABLED_PAIRS = [
         "target_class": "NAICS2002",
         "source_year": "2007",
         "target_year": "2002",
-        "enabled": False,
+        "enabled": True,
     },
     {
         "direction": "backward",
@@ -235,6 +235,6 @@ SOURCE_TARGET_ENABLED_PAIRS = [
         "target_class": "NAICS1997",
         "source_year": "2002",
         "target_year": "1997",
-        "enabled": False,
+        "enabled": True,
     },
 ]
