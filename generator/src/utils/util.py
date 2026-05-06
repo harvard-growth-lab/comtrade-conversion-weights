@@ -75,14 +75,15 @@ def cleanup_input_matrices(obj):
     for conversion_weight_pair in obj.conversion_weights_pairs:
         matrices_dir = obj.data_path / "matrices"
 
-        # clear matrices from previous runs if they exist for this conversion
         if matrices_dir.exists():
-            matrices_clean_up_files = list(
-                matrices_dir.glob(
-                    f"conversion.matrix.start.{conversion_weight_pair['source_year']}.end.{conversion_weight_pair['target_year']}.group.*.csv"
+            source_year = conversion_weight_pair['source_year']
+            target_year = conversion_weight_pair['target_year']
+            for prefix in ("conversion", "source.trade", "target.trade"):
+                cleanup_files_from_dir(
+                    list(matrices_dir.glob(
+                        f"{prefix}.matrix.{obj.data_source}.start.{source_year}.end.{target_year}.group.*.csv"
+                    ))
                 )
-            )
-            cleanup_files_from_dir(matrices_clean_up_files)
 
 
 def cleanup_weight_files(obj):
@@ -94,7 +95,7 @@ def cleanup_weight_files(obj):
         if weights_dir.exists():
             conversion_clean_up_files = list(
                 weights_dir.glob(
-                    f"conversion.weights.start.{conversion_weight_pair['source_year']}.end.{conversion_weight_pair['target_year']}.group.*.csv"
+                    f"conversion.weights.{obj.data_source}.start.{conversion_weight_pair['source_year']}.end.{conversion_weight_pair['target_year']}.group.*.csv"
                 )
             )
             cleanup_files_from_dir(conversion_clean_up_files)

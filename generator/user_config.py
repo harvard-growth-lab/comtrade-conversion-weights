@@ -17,10 +17,9 @@ from src.config.source_target_pairs import SOURCE_TARGET_ENABLED_PAIRS
 
 # top file directory path data downloaded from comtrade
 RAW_DOWNLOADED_COMTRADE_DATA_PATH = (
-    "/Users/ELJ479/projects/weights_generator/generator/data/"
+    "/n/hausmann_lab/lab/atlas/data/"
+    #"/Users/ELJ479/projects/weights_generator/generator/data/"
 )
-# "/n/hausmann_lab/lab/atlas/data/"
-
 
 # =============================================================================
 # SOURCE

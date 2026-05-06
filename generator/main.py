@@ -90,7 +90,7 @@ def run():
                 raise ValueError(f"Failed tests: {failed_tests}")
 
             util.cleanup_weight_files(base_obj)
-            matlab_runner = MatlabProgramRunner(conversion_weights_pairs)
+            matlab_runner = MatlabProgramRunner(conversion_weights_pairs, data_source=SOURCE)
             matlab_runner.write_matlab_params()
             matlab_runner.run_matlab_optimization()
 

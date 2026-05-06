@@ -7,7 +7,7 @@
 
 for group = groups
 
-    clearvars -except groups group start_year end_year tol
+    clearvars -except groups group start_year end_year tol data_source
     
     disp(' ')
     disp(strcat('Running group:', num2str(group)))
@@ -15,14 +15,14 @@ for group = groups
     current_dir = pwd;
     data_dir = fullfile(current_dir, '..', '..', 'data', 'matrices');
 
-    filename = sprintf('conversion.matrix.start.%d.end.%d.group.%d.csv', start_year, end_year, group);
+    filename = sprintf('conversion.matrix.%s.start.%d.end.%d.group.%d.csv', data_source, start_year, end_year, group);
     filepath = fullfile(data_dir, filename);
     raw = readcell(filepath);
 
     raw=raw(2:end, 2:end);raw=string(raw);
     conversion_mat=raw=="True";
 
-    filename = sprintf('source.trade.matrix.start.%d.end.%d.group.%d.csv', start_year, end_year, group);
+    filename = sprintf('source.trade.matrix.%s.start.%d.end.%d.group.%d.csv', data_source, start_year, end_year, group);
     filepath = fullfile(data_dir, filename);
     raw = readcell(filepath);
 
@@ -48,7 +48,7 @@ for group = groups
     old_trade_mat=old_trade_mat./sum(old_trade_mat(:));%normalize group trade in a year
 
 
-    filename = sprintf('target.trade.matrix.start.%d.end.%d.group.%d.csv', start_year, end_year, group);
+    filename = sprintf('target.trade.matrix.%s.start.%d.end.%d.group.%d.csv', data_source, start_year, end_year, group);
     filepath = fullfile(data_dir, filename);
     raw = readcell(filepath);
 
@@ -223,7 +223,7 @@ for group = groups
         mkdir(weights_dir);
     end
 
-    filename = sprintf('conversion.weights.start.%d.end.%d.group.%d.csv', start_year, end_year, group);
+    filename = sprintf('conversion.weights.%s.start.%d.end.%d.group.%d.csv', data_source, start_year, end_year, group);
     filepath = fullfile(weights_dir, filename);
     dlmwrite(filepath, btildecon, 'delimiter', ',', 'precision', 20);
     

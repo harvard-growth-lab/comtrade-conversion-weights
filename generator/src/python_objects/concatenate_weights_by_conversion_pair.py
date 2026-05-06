@@ -20,10 +20,10 @@ class ConcatenateWeights(Base):
 
     GROUP_ID_PATTERN = r"group\.(\d+)\.csv$"
     CONVERSION_WEIGHT_FILENAME_PATTERN = (
-        "conversion.weights.start.{start}.end.{end}.group.*.csv"
+        "conversion.weights.{data_source}.start.{start}.end.{end}.group.*.csv"
     )
     CONVERSION_MATRIX_FILENAME_PATTERN = (
-        "conversion.matrix.start.{start}.end.{end}.group.{group_id}.csv"
+        "conversion.matrix.{data_source}.start.{start}.end.{end}.group.{group_id}.csv"
     )
     WEIGHT_FOR_N_TO_1_MAPPED_PRODUCTS = 1
     NO_WEIGHT = 0
@@ -64,10 +64,7 @@ class ConcatenateWeights(Base):
         optimized_conversion_weights = pd.DataFrame()
         results = self.get_conversion_weight_optimization_results()
 
-        if self.source_class.startswith("H"):
-            detailed_product_level = self.HS_DETAIL_PRODUCT_CODE_LENGTH
-        else:
-            detailed_product_level = self.SITC_DETAIL_PRODUCT_CODE_LENGTH
+        detailed_product_level = self.DETAIL_PRODUCT_CODE_LENGTH[self.source_class]
 
 
         for file in results:
@@ -90,7 +87,9 @@ class ConcatenateWeights(Base):
         weights_dir = self.data_path / "conversion_weights"
         results = weights_dir.glob(
             self.CONVERSION_WEIGHT_FILENAME_PATTERN.format(
-                start=self.source_year, end=self.target_year
+                data_source=self.data_source,
+                start=self.source_year,
+                end=self.target_year,
             )
         )
         if not results:
@@ -116,7 +115,7 @@ class ConcatenateWeights(Base):
         conversion_group = pd.read_csv(
             self.matrices_dir
             / self.CONVERSION_MATRIX_FILENAME_PATTERN.format(
-                start=self.source_year, end=self.target_year, group_id=group_id
+                data_source=self.data_source, start=self.source_year, end=self.target_year, group_id=group_id
             ),
             dtype={"code.source": str},
         )

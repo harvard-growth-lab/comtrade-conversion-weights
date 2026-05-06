@@ -169,7 +169,7 @@ class NAICSMatrixBuilder(Base):
 
         matrices_path = self.data_path / "matrices"
         files = matrices_path.glob(
-            f"{table}.matrix.start.{source_year}.end.{target_year}.group.*.csv"
+            f"{table}.matrix.{self.data_source}.start.{source_year}.end.{target_year}.group.*.csv"
         )
 
         # clean out previously generated files
@@ -197,7 +197,7 @@ class NAICSMatrixBuilder(Base):
             df.to_csv(
                 self.data_path
                 / "matrices"
-                / f"{table}.matrix.start.{source_year}.end.{target_year}.group.{group_id}.csv"
+                / f"{table}.matrix.{self.data_source}.start.{source_year}.end.{target_year}.group.{group_id}.csv"
             )
 
     def conversion_matrix(self, groups):
